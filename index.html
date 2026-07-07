@@ -51,7 +51,6 @@
 <meta name="ext-resource-dependency" content="assets/silver.png"/>
 <meta name="ext-resource-dependency" content="assets/sui.png"/>
 <div class="stage">
-  <div class="label">arx · mobile UI kit · iOS · web3 dark</div>
   <div id="root"></div>
 </div>
 
@@ -299,7 +298,6 @@ function App() {
 
   return (
     <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:16}}>
-      <DemoPanel theme={theme} setTheme={setTheme}/>
       <div style={{width:402*fit, height:874*fit, flexShrink:0}}>
         <div id="arx-frame" style={{transform:`scale(${fit})`, transformOrigin:'top left', width:402, height:874}}>
           {device}

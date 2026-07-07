@@ -9,6 +9,7 @@
 const ARX_RSS_FEEDS = [
   { src:'CoinTelegraph', url:'https://cointelegraph.com/rss' },
   { src:'CoinDesk',      url:'https://www.coindesk.com/arc/outboundfeeds/rss/' },
+  { src:'Decrypt',       url:'https://decrypt.co/feed' },
   { src:'The Block',     url:'https://www.theblock.co/rss.xml' },
   { src:'CryptoSlate',   url:'https://cryptoslate.com/feed/' },
   { src:'Yahoo Finance', url:'https://feeds.finance.yahoo.com/rss/2.0/headline?s=BTC-USD,ETH-USD&region=US&lang=en-US' },
@@ -123,7 +124,7 @@ async function arxLoadLiveNews(force){
   if (endpoint){
     try { const j = await arxFetchJson(endpoint, 9000); const arr = Array.isArray(j) ? j : (j.items||[]);
       const mapped = arr.map(it => arxMapItem(it, it.source||'Newswire')).filter(Boolean);
-      if (mapped.length){ const items = mapped.sort((a,b)=>b.ts-a.ts).slice(0,30);
+      if (mapped.length){ const items = mapped.sort((a,b)=>b.ts-a.ts).slice(0,100);
         try { sessionStorage.setItem(ARX_NEWS_CACHE_KEY, JSON.stringify({ fetchedAt:Date.now(), items })); } catch(e){}
         return items; } } catch(e){}
   }
@@ -147,7 +148,7 @@ async function arxLoadLiveNews(force){
     if (got.length) merged.push(...got);
   }
   merged.sort((a,b)=>b.ts-a.ts);
-  const items = merged.slice(0, 30);
+  const items = merged.slice(0, 100);
 
   if (items.length){
     try { sessionStorage.setItem(ARX_NEWS_CACHE_KEY, JSON.stringify({ fetchedAt:Date.now(), items })); } catch(e){}

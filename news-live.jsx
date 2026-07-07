@@ -279,14 +279,16 @@ function LiveArticleScreen({ item, onBack }){
         </div>
         {n.summary && <p style={{margin:'16px 0 0', font:'400 15px var(--font-body)', color:'var(--text-secondary)', lineHeight:1.6}}>{n.summary}</p>}
 
-        {story !== false && <div style={{marginTop:18}}>
+        {(story !== false || n.summary) && <div style={{marginTop:18}}>
           <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:8}}>
             <span style={{font:'700 10px var(--font-body)', letterSpacing:'.06em', textTransform:'uppercase', color:'var(--text-tertiary)'}}>The full story</span>
-            <span style={{font:'600 8.5px var(--font-body)', color:'var(--color-violet-500)', background:'rgba(124,91,255,.14)', padding:'2px 7px', borderRadius:999, letterSpacing:'.04em'}}>AI-COMPILED</span>
+            {story !== false && <span style={{font:'600 8.5px var(--font-body)', color:'var(--color-violet-500)', background:'rgba(124,91,255,.14)', padding:'2px 7px', borderRadius:999, letterSpacing:'.04em'}}>AI-COMPILED</span>}
           </div>
           {story === null
             ? <div style={{display:'flex', flexDirection:'column', gap:8}}>{[1,2,3].map(k=>(<div key={k} style={{height:13, borderRadius:6, width:(k===3?'70%':'100%'), background:'linear-gradient(100deg, var(--surface-elevated) 30%, var(--glass-control-bg) 50%, var(--surface-elevated) 70%)', backgroundSize:'200% 100%', animation:'arxsh 1.3s linear infinite'}}/>))}<style>{'@keyframes arxsh{to{background-position:-200% 0}}'}</style></div>
-            : story.map((p,idx)=>(<p key={idx} style={{margin: idx?'12px 0 0':0, font:'400 14.5px var(--font-body)', color:'var(--text-secondary)', lineHeight:1.62}}>{p}</p>))}
+            : story
+              ? story.map((p,idx)=>(<p key={idx} style={{margin: idx?'12px 0 0':0, font:'400 14.5px var(--font-body)', color:'var(--text-secondary)', lineHeight:1.62}}>{p}</p>))
+              : <p style={{margin:0, font:'400 14.5px var(--font-body)', color:'var(--text-secondary)', lineHeight:1.62}}>{n.summary}</p>}
         </div>}
       </div>
 

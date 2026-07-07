@@ -290,7 +290,6 @@ function LiveArticleScreen({ item, onBack }){
         {(story !== false || n.summary) && <div style={{marginTop:18}}>
           <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:8}}>
             <span style={{font:'700 10px var(--font-body)', letterSpacing:'.06em', textTransform:'uppercase', color:'var(--text-tertiary)'}}>The full story</span>
-            {story !== false && <span style={{font:'600 8.5px var(--font-body)', color:'var(--color-violet-500)', background:'rgba(124,91,255,.14)', padding:'2px 7px', borderRadius:999, letterSpacing:'.04em'}}>AI-COMPILED</span>}
           </div>
           {story === null
             ? <div style={{display:'flex', flexDirection:'column', gap:8}}>{[1,2,3].map(k=>(<div key={k} style={{height:13, borderRadius:6, width:(k===3?'70%':'100%'), background:'linear-gradient(100deg, var(--surface-elevated) 30%, var(--glass-control-bg) 50%, var(--surface-elevated) 70%)', backgroundSize:'200% 100%', animation:'arxsh 1.3s linear infinite'}}/>))}<style>{'@keyframes arxsh{to{background-position:-200% 0}}'}</style></div>

@@ -116,8 +116,9 @@ async function arxLoadLiveNews(force){
     if (raw && !force){ const c = JSON.parse(raw); if (c && c.fetchedAt && (Date.now()-c.fetchedAt) < ARX_NEWS_TTL && c.items && c.items.length) return c.items; }
   } catch(e){}
 
-  // optional backend override (arx_news_url)
-  const endpoint = (()=>{ try { return localStorage.getItem('arx_news_url'); } catch(e){ return null; } })();
+  // backend: localStorage override first, then built-in worker
+  const ARX_NEWS_WORKER = 'https://arx-news.daryl-teo.workers.dev';
+  const endpoint = (()=>{ try { return localStorage.getItem('arx_news_url') || ARX_NEWS_WORKER; } catch(e){ return ARX_NEWS_WORKER; } })();
   if (endpoint){
     try { const j = await arxFetchJson(endpoint, 9000); const arr = Array.isArray(j) ? j : (j.items||[]);
       const mapped = arr.map(it => arxMapItem(it, it.source||'Newswire')).filter(Boolean);

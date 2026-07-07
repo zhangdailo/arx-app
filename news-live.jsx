@@ -75,7 +75,8 @@ function arxMapItem(it, src){
   const title = arxStripHtml(it.title); if(!title) return null;
   const summary = arxStripHtml(it.description).slice(0, 220);
   const text = title + ' ' + summary;
-  const img = it.thumbnail || (it.enclosure && it.enclosure.link) || null;
+  const rawImg = it.imageUrl || it.thumbnail || (it.enclosure && it.enclosure.link) || null;
+  const img = rawImg ? rawImg.replace(/&amp;/g, '&') : null;
   return {
     id: 'live-' + src + '-' + (Date.parse(it.pubDate)||0) + '-' + title.slice(0,20).replace(/\W+/g,''),
     title, link: it.link || '', ts: Date.parse(it.pubDate) || Date.now(), source: src,

@@ -222,12 +222,13 @@ function AlsoListedStrip({ text }){
 function LiveArticleScreen({ item, onBack }){
   const n = item || {};
   const sym = n.sym;
-  const img = n.image || (window.arxFeedImg ? arxFeedImg(sym) : null);
+  const img = ogImage || n.image || (window.arxFeedImg ? arxFeedImg(sym) : null);
   const im = window.arxFindInstrument ? arxFindInstrument(sym) : null;
   const pos = im && im.deltaPct>=0;
   const ink = (window.NEWS_CAT && (NEWS_CAT[n.cat]||NEWS_CAT.Asset)||['#7C5BFF'])[0];
   const [rec, setRec] = React.useState(null);   // null=loading · {read, peers:[{sym,note}]}
   const [story, setStory] = React.useState(null); // null=loading · []=paragraphs · false=none
+  const [ogImage, setOgImage] = React.useState(null);
 
   const ARX_NEWS_WORKER = 'https://arx-news.daryl-teo.workers.dev';
 
@@ -259,12 +260,13 @@ function LiveArticleScreen({ item, onBack }){
 
   // Full article — worker reader first, fall back to RSS summary
   React.useEffect(()=>{
-    let live = true; setStory(null);
+    let live = true; setStory(null); setOgImage(null);
     if(!n.link){ setStory(false); return; }
     fetch(`${ARX_NEWS_WORKER}/article?url=${encodeURIComponent(n.link)}`)
       .then(r=>r.ok ? r.json() : Promise.reject())
       .then(j=>{
         if(!live) return;
+        if(j.ogImage) setOgImage(j.ogImage);
         const paras = Array.isArray(j.paragraphs) && j.paragraphs.length ? j.paragraphs : null;
         setStory(paras || false);
       })

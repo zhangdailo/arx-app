@@ -228,38 +228,46 @@ function LiveArticleScreen({ item, onBack }){
   const [rec, setRec] = React.useState(null);   // null=loading · {read, peers:[{sym,note}]}
   const [story, setStory] = React.useState(null); // null=loading · []=paragraphs · false=none
 
+  const ARX_NEWS_WORKER = 'https://arx-news.daryl-teo.workers.dev';
+
+  // Ticker analysis — worker AI first, arxLLMRaw fallback, static themed last
   React.useEffect(()=>{
     let live = true;
-    const text = (n.title||'') + ' ' + (n.summary||'');
-    const isAI = /\b(ai|model|llm|anthropic|openai|claude|chip|gpu|nvidia|deepseek|export control|semiconductor)\b/i.test(text);
-    const themed = isAI
-      ? { read:`${sym||'NVDA'} is the clearest listed proxy — AI-model expansion drives GPU & compute demand, and the whole model-maker peer group tends to re-rate together on news like this.`,
-          peers:[{sym:'NVDA',note:'GPU / compute'},{sym:'ANTHRP',note:'the subject'},{sym:'OPENAI',note:'model peer'},{sym:'BABA',note:'China AI leader'},{sym:'DEEPSEEK',note:'low-cost model'},{sym:'SPACEX',note:'AI-infra demand'}] }
-      : { read: sym ? `${sym} is the ticker most tied to this story${im?` — ${pos?'up':'down'} ${Math.abs(im.deltaPct).toFixed(1)}% today`:''}. Watch how it prices the news in.` : `No single ticker dominates — watch majors (BTC, ETH) for the read.`,
-          peers: sym ? [{sym, note:'primary'}] : [{sym:'BTC',note:'macro proxy'},{sym:'ETH',note:'risk proxy'}] };
+    const themed = sym
+      ? { read:`${sym} is the ticker most tied to this story${im?` — ${pos?'up':'down'} ${Math.abs(im.deltaPct).toFixed(1)}% today`:''}. Watch how it prices the news in.`, peers:[{sym,note:'primary'}] }
+      : { read:'No single ticker dominates — watch majors (BTC, ETH) for the read.', peers:[{sym:'BTC',note:'macro proxy'},{sym:'ETH',note:'risk proxy'}] };
 
-    const prompt = `A markets/crypto headline just published:\n"${n.title}"\n${n.summary||''}\n\nReply ONLY with compact JSON, no markdown fences:\n{"read":"1-2 sentences on the PRIMARY ticker and why THIS specific story moves it","peers":[{"sym":"TICKER","note":"3-6 word angle"}]}\nHARD RULES: (1) peers[0] IS the primary ticker and your "read" must be about that exact ticker. (2) Pick the ticker whose price is MOST directly and specifically moved by THIS story — the asset the story is actually about. (3) Do NOT pick COIN or a generic exchange unless the story is specifically about a centralized exchange, a token listing, or exchange regulation. (4) Then add 2-5 more directly-comparable peers.\nUse ARX tickers: crypto perps (BTC,ETH,SOL,HYPE,XRP,DOGE,AVAX,SUI), stocks (NVDA,TSLA,BABA,META,MSFT,AMZN,COIN), commodities (GOLD,OIL), pre-IPO (OPENAI,ANTHRP,DEEPSEEK,SPACEX). Guidance: AI/LLM/chip story -> NVDA,ANTHRP,OPENAI,BABA,DEEPSEEK,SPACEX. Gold/rates/Fed -> GOLD. A specific coin's story -> that coin first. Broad-market regulation -> BTC first. Analysis only, never "buy"/"sell", never financial advice.`;
-    if (window.arxLLMRaw){
-      window.arxLLMRaw(prompt).then(r=>{
+    fetch(`${ARX_NEWS_WORKER}/analyze`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ title: n.title||'', summary: n.summary||'' }),
+    })
+      .then(r=>r.ok ? r.json() : Promise.reject())
+      .then(j=>{ if(live && j.read && Array.isArray(j.peers) && j.peers.length) setRec(j); else throw new Error(); })
+      .catch(()=>{
         if(!live) return;
-        try { const j = JSON.parse(String(r).replace(/```json|```/g,'').trim());
-          if (j && j.read && Array.isArray(j.peers) && j.peers.length){ setRec({ read:j.read, peers:j.peers.slice(0,6) }); return; } } catch(e){}
-        setRec(themed);
-      }).catch(()=>{ if(live) setRec(themed); });
-    } else { setRec(themed); }
+        if(window.arxLLMRaw){
+          const prompt = `Headline: "${n.title}"\nSummary: ${n.summary||''}\nReply ONLY with JSON: {"read":"1-2 sentences on primary ticker","peers":[{"sym":"TICKER","note":"3-6 words"}]}\nTickers: BTC ETH SOL HYPE XRP DOGE AVAX SUI NVDA TSLA BABA COIN GOLD OIL OPENAI ANTHRP DEEPSEEK`;
+          window.arxLLMRaw(prompt).then(r=>{
+            if(!live) return;
+            try { const j=JSON.parse(String(r).replace(/```json|```/g,'').trim()); if(j.read && j.peers) setRec(j); else setRec(themed); } catch(e){ setRec(themed); }
+          }).catch(()=>{ if(live) setRec(themed); });
+        } else { setRec(themed); }
+      });
     return ()=>{ live=false; };
   }, [n.id]);
 
-  // AI-compiled full briefing (original synthesis — we never reproduce source text)
+  // Full article — worker reader first, fall back to RSS summary
   React.useEffect(()=>{
     let live = true; setStory(null);
-    const prompt = `Write an original news briefing for ARX traders based ONLY on this headline and one-line summary. Do NOT copy or paraphrase any publisher's article text — synthesize the situation in your own words from general knowledge. 3 short paragraphs (~150 words total): what happened, the market context, and what it means for crypto / AI-exposed tickers. Plain paragraphs separated by blank lines, no headings, no markdown. Analysis only, never financial advice.\n\nHeadline: "${n.title}"\nSummary: ${n.summary||''}`;
-    if (window.arxLLMRaw){
-      window.arxLLMRaw(prompt).then(r=>{ if(!live) return;
-        const paras = String(r||'').split(/\n\n+/).map(s=>s.replace(/\s+/g,' ').trim()).filter(Boolean);
-        setStory(paras.length ? paras : false);
-      }).catch(()=>{ if(live) setStory(false); });
-    } else { setStory(false); }
+    if(!n.link){ setStory(false); return; }
+    fetch(`${ARX_NEWS_WORKER}/article?url=${encodeURIComponent(n.link)}`)
+      .then(r=>r.ok ? r.json() : Promise.reject())
+      .then(j=>{
+        if(!live) return;
+        const paras = Array.isArray(j.paragraphs) && j.paragraphs.length ? j.paragraphs : null;
+        setStory(paras || false);
+      })
+      .catch(()=>{ if(live) setStory(false); });
     return ()=>{ live=false; };
   }, [n.id]);
 

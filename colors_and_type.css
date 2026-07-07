@@ -1,0 +1,396 @@
+/* ───────────────────────────────────────────────
+   Arx Design System — v6.0 Tokens
+   Brand Book Alignment (April 2026)
+   Source: uploads/Arx_5-8_Design_System.md
+   Five colors: Violet · Purple · Electric · Frost · Midnight
+   Electric is BRAND EXPRESSION ONLY — never product UI.
+   ─────────────────────────────────────────────── */
+
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Noto+Sans+KR:wght@400;500;600;700&display=swap");
+
+/* Brand fonts load from Google Fonts above (Plus Jakarta Sans · Inter · JetBrains Mono).
+   Roboto Flex (Android body) falls back to system sans where referenced. */
+
+:root {
+  /* ─── Violet (Primary) — Arx signature, AI, CTAs ─── */
+  /* Production accent absorbed from the shipping prototype (was brand-book #7C5BFF). */
+  --color-violet-50:  #F3F0FF;
+  --color-violet-100: #E6E0FF;
+  --color-violet-200: #CDC1FF;
+  --color-violet-300: #B3A1FF;
+  --color-violet-400: #9880FF;
+  --color-violet-500: #7C5BFF;   /* base — brand lavender, production accent */
+  --color-violet-600: #6845FF;   /* hover (accent-strong) */
+  --color-violet-700: #5436D9;   /* press */
+
+  /* ─── Purple (Secondary) — supports Violet, ≤30% area ─── */
+  --color-purple-50:  #EBE8F2;
+  --color-purple-100: #D9D4E5;
+  --color-purple-200: #9D90BB;
+  --color-purple-300: #7060A0;
+  --color-purple-400: #5840A2;
+  --color-purple-500: #381B81;
+  --color-purple-600: #28156A;
+
+  /* ─── Electric (Brand Expression Only — never product UI) ─── */
+  --color-electric-500: #22D1EE;
+
+  /* ─── Frost (Light-mode neutral — replaces white) ─── */
+  --color-frost-50:  #E9EAFD;
+  --color-frost-100: #D2D5F8;
+  --color-frost-200: #B5BAEF;
+  --color-frost-300: #969CD4;
+  --color-frost-400: #7B82BB;
+  --color-frost-500: #5C638F;
+  --color-frost-600: #404670;
+
+  /* ─── Midnight (Dark-mode neutral — lifted, violet-leaning) ─── */
+  --color-midnight-200: #1A1A24;
+  --color-midnight-300: #14141C;   /* card */
+  --color-midnight-400: #0E0E14;   /* surface */
+  --color-midnight-500: #06060A;   /* bg — absorbed from shipping prototype */
+  --color-midnight-600: #030305;
+
+  /* ─── Functional regime (immutable, equal-lightness) ─── */
+  /* Up = Mint, Down = Coral — both oklch(L≈0.74). Read as conversation, not stop-light. */
+  --regime-up-light:    #B8EFD6;  --regime-up-mid:    #14B87B;  --regime-up-dark:    #0A6E48;
+  --regime-down-light:  #FFD4DB;  --regime-down-mid:  #FF4D6A;  --regime-down-dark:  #B11E38;
+  --regime-range-light: #CDE1FB;  --regime-range-mid: #3B82F6;  --regime-range-dark: #1E3A8A;
+  --regime-trans-light: #FEF3C7;  --regime-trans-mid: #FBBF24;  --regime-trans-dark: #78350F;
+  --regime-comp-light:  #E9E8F8;  --regime-comp-mid:  #B45309;  --regime-comp-dark:  #451A03;
+  --regime-crisis-light:#FFB8BB;  --regime-crisis-mid:#DC2626;  --regime-crisis-dark:#BE0000;
+
+  /* ─── Peach (Delight) — warm complement to Violet ─── */
+  /* Use sparingly: milestones, streaks, onboarding warmth. Max 1 element per screen. */
+  --color-peach-50:  #FFF6EC;
+  --color-peach-100: #F8E8D6;
+  --color-peach-300: #F5C29C;
+  --color-peach-500: #E69968;
+  --color-peach-700: #B36634;
+
+  /* ─── Surfaces (dark mode default) ─── */
+  --surface-base:     var(--color-midnight-500);
+  --surface-elevated: var(--color-midnight-400);
+  --surface-modal:    var(--color-midnight-300);
+
+  /* ─── Text ─── */
+  --text-primary:   var(--color-frost-50);
+  --text-secondary: var(--color-frost-200);
+  --text-tertiary:  var(--color-frost-300);
+
+  /* ─── Borders ─── */
+  --border-default: var(--color-midnight-300);
+  --border-strong:  var(--color-midnight-200);
+
+  /* ─── Brand semantic ─── */
+  --brand-primary:  var(--color-violet-500);
+
+  /* ─── Glass (Violet-tinted) · three weights · chrome only ─── */
+  /* THIN — tab bar, nav bar, sheet handle */
+  --glass-thin-bg:     rgba(124, 91, 255, 0.06);
+  --glass-thin-blur:   16px;
+  --glass-thin-border: rgba(124, 91, 255, 0.10);
+  /* REGULAR — toolbar, popover, contextual chrome */
+  --glass-regular-bg:     rgba(124, 91, 255, 0.08);
+  --glass-regular-blur:   20px;
+  --glass-regular-border: rgba(124, 91, 255, 0.12);
+  /* THICK — modal scrim, drawer chrome */
+  --glass-thick-bg:     rgba(124, 91, 255, 0.12);
+  --glass-thick-blur:   28px;
+  --glass-thick-border: rgba(124, 91, 255, 0.16);
+  /* Solid fallbacks — bound via @media (prefers-reduced-transparency) below */
+  --glass-fallback-thin:    var(--surface-elevated);
+  --glass-fallback-regular: var(--surface-elevated);
+  --glass-fallback-thick:   var(--surface-modal);
+  /* legacy alias */
+  --glass-bg:     var(--glass-regular-bg);
+  --glass-border: var(--glass-regular-border);
+  --glass-blur:   blur(20px);  /* @kind other */
+
+  /* ─── Glass overlays (chrome) — theme-aware ─── */
+  --glass-tab-bg:       rgba(7, 7, 0, 0.72);
+  --glass-tab-border:   rgba(255, 255, 255, 0.06);
+  --glass-sheet-bg:     rgba(14, 13, 13, 0.78);
+  --glass-sheet-border: rgba(124, 91, 255, 0.18);
+  --lucid-overlay-bg:   rgba(18, 15, 32, 0.92);
+  --glass-control-bg:   rgba(255, 255, 255, 0.06);
+  --glass-control-bg-strong: rgba(255, 255, 255, 0.10);
+  --shadow-card:        none;
+
+  /* ─── Elevation ─── */
+  --elev-card:        0 1px  2px rgba(0,0,0,0.20);
+  --elev-popover:     0 4px 12px rgba(0,0,0,0.30);
+  --elev-modal:       0 16px 40px rgba(0,0,0,0.45);
+  --shadow-execute:   0 8px 24px rgba(124,91,255,0.35);
+
+  /* ─── Spacing (4-base) ─── */
+  --sp-2xs: 4px;  --sp-xs:  8px;  --sp-sm: 12px;  --sp-md: 16px;
+  --sp-lg:  24px; --sp-xl:  32px; --sp-2xl: 48px;
+
+  /* ─── Radii ─── */
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-pill: 999px;
+
+  /* ─── Type families (3-tier) ─── */
+  --font-brand: "Plus Jakarta Sans", "Raptor V3", system-ui, sans-serif;
+  --font-body:  "Inter", "Spoqa Han Sans Neo", system-ui, sans-serif;
+  --font-mono:  "JetBrains Mono", "SF Mono", ui-monospace, monospace;
+
+  /* legacy aliases (kept for previously-built components) */
+  --font-sans:        var(--font-body);
+  --bg:               var(--surface-base);
+  --surface:          var(--surface-elevated);
+  --surface-el:       var(--surface-elevated);
+  --text-1:           var(--text-primary);
+  --text-2:           var(--text-secondary);
+  --text-3:           var(--text-tertiary);
+  --border:           var(--border-default);
+  --stone:            var(--color-violet-500);
+  --stone-lit:        var(--color-violet-600);
+  --stone-deep:       var(--color-violet-700);
+  --stone-glow:       var(--color-violet-300);
+  --positive:         var(--regime-up-mid);
+  --negative:         var(--regime-down-mid);
+  --warning:          var(--regime-trans-mid);
+  --info:             var(--regime-range-mid);
+  --delight:          var(--color-peach-500);
+  --delight-tint:     var(--color-peach-100);
+  --delight-ink:      var(--color-peach-700);
+
+  /* ─── Motion · 4-tier budget · data ≤ 400ms hard cap ─── */
+  --motion-instant: 80ms  linear;  /* @kind other */
+  --motion-fast:    200ms cubic-bezier(0.22, 1, 0.36, 1);  /* @kind other */
+  --motion-medium:  300ms cubic-bezier(0.4,  0, 0.2,  1);  /* @kind other */
+  --motion-reveal:  500ms cubic-bezier(0,    0, 0.2,  1);  /* @kind other */
+  --motion-glow:    800ms ease-in-out;  /* @kind other */
+  /* legacy aliases */
+  --motion-base: var(--motion-medium);  /* @kind other */
+  --motion-slow: var(--motion-reveal);  /* @kind other */
+
+  /* ═══ COMPONENT TOKENS (tier 3) — re-theme by editing these only ═══ */
+  /* Button */
+  --button-primary-bg:        var(--color-violet-500);
+  --button-primary-bg-hover:  var(--color-violet-600);
+  --button-primary-bg-press:  var(--color-violet-700);
+  --button-primary-fg:        #FFFFFF;
+  --button-primary-shadow:    var(--shadow-execute);
+  --button-secondary-bg:      var(--surface-elevated);
+  --button-secondary-fg:      var(--text-primary);
+  --button-tonal-bg:          rgba(124,91,255,.14);
+  --button-tonal-fg:          var(--color-violet-700);
+  --button-disabled-bg:       rgba(120,120,128,.10);
+  --button-disabled-fg:       var(--text-tertiary);
+  --button-radius:            var(--r-md);
+  --button-height:            44px;
+  /* Card */
+  --card-bg:                  var(--surface-elevated);
+  --card-border:             .5px solid var(--border-default);  /* @kind other */
+  --card-radius:              var(--r-lg);
+  --card-pad:                 16px;
+  --card-shadow:              var(--shadow-card);
+  /* Input */
+  --input-bg:                 var(--surface-elevated);
+  --input-border:            .5px solid var(--border-default);  /* @kind other */
+  --input-border-focus:       1.5px solid var(--color-violet-500);  /* @kind other */
+  --input-fg:                 var(--text-primary);
+  --input-placeholder:        var(--text-tertiary);
+  --input-radius:             var(--r-md);
+  --input-height:             48px;
+  --input-focus-ring:         0 0 0 4px rgba(124,91,255,.16);
+  /* Pill / chip */
+  --chip-bg:                  rgba(120,120,128,.10);
+  --chip-bg-selected:         #FFFFFF;
+  --chip-fg:                  var(--text-primary);
+  --chip-radius:              var(--r-sm);
+  /* Focus (a11y global) */
+  --focus-ring:               0 0 0 2px var(--surface-base), 0 0 0 4px var(--color-violet-500);
+
+  /* ═══ RESPONSIVE BREAKPOINTS ═══ */
+  --bp-sm:   640px;   /* compact phones, web mobile portrait */
+  --bp-md:   768px;   /* tablets portrait, web mobile landscape */
+  --bp-lg:  1024px;   /* tablets landscape, web desktop small */
+  --bp-xl:  1280px;   /* desktop default */
+  --bp-2xl: 1536px;   /* desktop wide */
+
+  /* ═══ PLATFORM-ADAPTIVE TOKENS (tier 4) ═══
+     Defaults = iOS. Override per platform via [data-platform=…] below. */
+  --platform-touch-target:   44px;     /* iOS HIG */
+  --platform-tap-target:     44px;
+  --platform-radius-card:    16px;     /* iOS continuous corner */
+  --platform-radius-button:  12px;
+  --platform-back-gesture:   swipe;    /* @kind other */
+  --platform-haptic:         uikit;    /* @kind other */
+  --platform-nav-pattern:    tab-bar;  /* @kind other */
+  --platform-fab:            none;     /* @kind other */
+  --platform-elev-card:      0 1px 2px rgba(0,0,0,0.04);
+  --platform-status-bar:     54px;
+}
+
+[data-platform="android"] {
+  --platform-touch-target:   48px;     /* Material spec */
+  --platform-tap-target:     48px;
+  --platform-radius-card:    12px;     /* Material 3 rounded */
+  --platform-radius-button:  20px;     /* Material full-pill default */
+  --platform-back-gesture:   predictive; /* @kind other */
+  --platform-haptic:         vibrator;  /* @kind other */
+  --platform-nav-pattern:    nav-bar;   /* @kind other */
+  --platform-fab:            56px;      /* FAB allowed; use for Trade */
+  --platform-elev-card:      0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  --platform-status-bar:     24px;
+  --font-body:               "Roboto Flex", "Roboto", "Inter", sans-serif;
+}
+
+[data-platform="web-desktop"] {
+  --platform-touch-target:   32px;     /* pointer device */
+  --platform-tap-target:     24px;
+  --platform-radius-card:    14px;
+  --platform-radius-button:  10px;
+  --platform-back-gesture:   browser;  /* @kind other */
+  --platform-haptic:         none;     /* @kind other */
+  --platform-nav-pattern:    side-nav; /* @kind other */
+  --platform-fab:            none;     /* @kind other */
+  --platform-elev-card:      0 1px 3px rgba(0,0,0,0.06);
+  --platform-status-bar:     0px;
+}
+
+[data-platform="web-mobile"] {
+  --platform-touch-target:   44px;
+  --platform-tap-target:     44px;
+  --platform-radius-card:    14px;
+  --platform-radius-button:  12px;
+  --platform-back-gesture:   browser;  /* @kind other */
+  --platform-haptic:         none;     /* @kind other */
+  --platform-nav-pattern:    tab-bar;  /* @kind other */
+  --platform-fab:            none;     /* @kind other */
+  --platform-elev-card:      0 1px 2px rgba(0,0,0,0.04);
+  --platform-status-bar:     0px;
+}
+
+/* ─── Reduced-transparency a11y · auto-bind glass to solid ─── */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass-thin-bg:     var(--glass-fallback-thin);
+    --glass-thin-blur:   0px;
+    --glass-regular-bg:  var(--glass-fallback-regular);
+    --glass-regular-blur:0px;
+    --glass-thick-bg:    var(--glass-fallback-thick);
+    --glass-thick-blur:  0px;
+  }
+}
+
+/* ─── Reduced-motion a11y · disable non-essential transitions ─── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+[data-theme="light"] {
+  --surface-base:     var(--color-frost-500);
+  --surface-elevated: var(--color-frost-100);
+  --surface-modal:    var(--color-frost-50);
+  --text-primary:     var(--color-midnight-600);
+  --text-secondary:   var(--color-frost-400);
+  --text-tertiary:    var(--color-frost-300);
+  --border-default:   var(--color-frost-200);
+  --border-strong:    var(--color-frost-300);
+}
+
+/* ─── Risk ladder (trust system) ─── */
+:root {
+  --risk-info-bg:     rgba(59,130,246,.10);  --risk-info-ink:     #1E3A8A;
+  --risk-caution-bg:  rgba(251,191,36,.14);  --risk-caution-ink:  #78350F;
+  --risk-critical-bg: rgba(242,106,106,.12); --risk-critical-ink: #A53B3B;
+  --risk-critical-solid: #DC2626;
+  --skeleton-base:   rgba(120,120,128,.10);
+  --skeleton-sheen:  rgba(255,255,255,.45);
+}
+
+/* Cockpit-dark · Pro trading surfaces (Trade/Pro, full-screen charts) */
+[data-theme="cockpit-dark"] {
+  --surface-base:       #0E0C18;
+  --surface-elevated:   #161325;
+  --surface-modal:      #1E1A33;
+  --text-primary:       #EDE9FE;
+  --text-secondary:     #9D96B8;
+  --text-tertiary:      #5A5480;
+  --border-default:     rgba(255,255,255,.07);
+  --border-strong:      rgba(255,255,255,.14);
+  --glass-tab-bg:       rgba(14,12,24,.72);
+  --glass-tab-border:   rgba(255,255,255,.06);
+  --glass-sheet-bg:     rgba(22,19,37,.88);
+  --glass-sheet-border: rgba(124,91,255,.20);
+  --lucid-overlay-bg:   rgba(24, 20, 42, 0.92);
+  --glass-control-bg:   rgba(255,255,255,.06);
+  --glass-control-bg-strong: rgba(255,255,255,.10);
+  --shadow-card:        none;
+  --skeleton-base:      rgba(255,255,255,.07);
+  --skeleton-sheen:     rgba(255,255,255,.12);
+  /* iOS system keypad (dark) */
+  --ioskbd-bg:          #1C1C1E;
+  --ioskbd-key:         #515153;
+  --ioskbd-key-active:  #6A6A6C;
+  --ioskbd-ink:         #FFFFFF;
+  --ioskbd-key-shadow:  rgba(0,0,0,.55);
+  --ioskbd-accessory:   #0E0C18;
+}
+
+/* iOS-light · for the mobile UI kit · whiter than Frost 500 base */
+[data-theme="ios-light"] {
+  --surface-base:       #F4F3FA;
+  --surface-elevated:   #FFFFFF;
+  --surface-modal:      #FFFFFF;
+  --text-primary:       #050500;
+  --text-secondary:     #5C638F;
+  --text-tertiary:      #969CD4;
+  --border-default:     rgba(60, 60, 67, 0.10);
+  --border-strong:      rgba(60, 60, 67, 0.18);
+
+  --glass-tab-bg:       rgba(255, 255, 255, 0.72);
+  --glass-tab-border:   rgba(0, 0, 0, 0.06);
+  --glass-sheet-bg:     rgba(255, 255, 255, 0.92);
+  --glass-sheet-border: rgba(124, 91, 255, 0.22);
+  --lucid-overlay-bg:   rgba(247, 246, 252, 0.92);
+  --glass-control-bg:   rgba(60, 60, 67, 0.06);
+  --glass-control-bg-strong: rgba(60, 60, 67, 0.10);
+  --shadow-card:        0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 1px rgba(0, 0, 0, 0.02);
+  /* iOS system keypad (light) */
+  --ioskbd-bg:          #D1D4DB;
+  --ioskbd-key:         #FFFFFF;
+  --ioskbd-key-active:  #BEC3CD;
+  --ioskbd-ink:         #050500;
+  --ioskbd-key-shadow:  rgba(0,0,0,.30);
+  --ioskbd-accessory:   #F4F3FA;
+}
+
+/* ─── Base ─── */
+*, *::before, *::after { box-sizing: border-box; }
+html, body {
+  background: var(--surface-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Type scale (v6.0) ─── */
+.t-display { font-family: var(--font-brand); font-size: 48px; line-height: 1.05; font-weight: 600; letter-spacing: -0.02em; }
+.t-h1      { font-family: var(--font-brand); font-size: 32px; line-height: 1.15; font-weight: 600; letter-spacing: -0.02em; }
+.t-h2      { font-family: var(--font-brand); font-size: 24px; line-height: 1.20; font-weight: 600; letter-spacing: -0.01em; }
+.t-h3      { font-family: var(--font-body);  font-size: 20px; line-height: 1.25; font-weight: 500; }
+.t-body    { font-family: var(--font-body);  font-size: 16px; line-height: 1.50; font-weight: 400; }
+.t-body-sm { font-family: var(--font-body);  font-size: 14px; line-height: 1.45; font-weight: 400; }
+.t-label   { font-family: var(--font-body);  font-size: 13px; line-height: 1.40; font-weight: 500; }
+.t-caption { font-family: var(--font-body);  font-size: 11px; line-height: 1.35; font-weight: 400; }
+.t-numeric { font-family: var(--font-body);  font-size: 14px; line-height: 1.35; font-weight: 500; font-variant-numeric: lining-nums tabular-nums; }
+.t-numeric-mono { font-family: var(--font-mono); font-size: 14px; line-height: 1.35; font-weight: 500; font-variant-numeric: lining-nums tabular-nums; }
+
+/* legacy (used by existing previews) */
+.t-hero    { font-family: var(--font-mono); font-size: 32px; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: lining-nums tabular-nums; }
+.t-hero-sm { font-family: var(--font-mono); font-size: 24px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: lining-nums tabular-nums; }
+.t-title    { font-family: var(--font-body); font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+.t-subtitle { font-family: var(--font-body); font-size: 14px; font-weight: 600; }
+.t-data     { font-family: var(--font-mono); font-size: 14px; font-weight: 600; font-variant-numeric: lining-nums tabular-nums; }
+
+.num { font-variant-numeric: lining-nums tabular-nums; }

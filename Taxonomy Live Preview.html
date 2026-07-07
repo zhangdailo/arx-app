@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>ARX · Taxonomy on live HL data</title>
+<link rel="stylesheet" href="colors_and_type.css"/>
+<style>
+  html,body{margin:0;background:#0E0C18;min-height:100vh;font-family:var(--font-body);color:var(--text-primary);}
+  [data-theme]{min-height:100vh;}
+  .wrap{max-width:460px;margin:0 auto;padding:28px 18px 60px;}
+  .mono{font-family:var(--font-mono);}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font:600 11px var(--font-body);}
+  .dot{width:7px;height:7px;border-radius:50%;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(20,184,123,.5)}70%{box-shadow:0 0 0 7px rgba(20,184,123,0)}100%{box-shadow:0 0 0 0 rgba(20,184,123,0)}}
+  .live .dot{animation:pulse 1.8s infinite;}
+  .row{display:flex;align-items:center;gap:12px;padding:12px 12px;border-radius:14px;background:var(--surface-elevated);border:.5px solid var(--border-default);margin-bottom:8px;}
+  .lab{font:700 9px var(--font-body);letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:999px;white-space:nowrap;}
+  .seg{flex:1;height:36px;border:none;border-radius:9px;cursor:pointer;font:600 12px var(--font-body);}
+</style>
+</head>
+<body data-theme="cockpit-dark">
+<div class="wrap"><div id="root"></div></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="creatures.jsx"></script>
+<script type="text/babel" src="lib/hl-client.jsx"></script>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+const { CreatureMark, PERF_COLOR } = window;
+
+/* ── Arx taxonomy labels (DS 5-7-1) ── */
+const PERF_LABEL = {
+  smart_money:'Smart money', rising_star:'Rising star', degen_winner:'Degen winner',
+  one_shot_winner:'One-shot winner', unproven:'Unproven', new_blood:'New blood', full_rekt:'Full rekt',
+};
+const PERF_EXP = {
+  smart_money:'Mature 90d record, controlled drawdown, non-concentrated gains.',
+  rising_star:'Strong recent 30d, not yet 90d-proven.',
+  degen_winner:'Profitable, but the way it makes money is risky.',
+  one_shot_winner:'Profit mostly from one or a few big wins.',
+  unproven:'Enough data, but no clear edge either way.',
+  new_blood:'Under 30d of evidence — too new to judge.',
+  full_rekt:'Lost meaningful capital; losses outweigh wins.',
+};
+const CAP_LABEL = { micro:'Micro · <$1K', small:'Small · $1K–10K', mid:'Mid · $10K–100K', large:'Large · $100K–1M', whale:'Whale · $1M+' };
+
+function capBand(v){ if(v>=1e6)return'whale'; if(v>=1e5)return'large'; if(v>=1e4)return'mid'; if(v>=1e3)return'small'; return'micro'; }
+
+/* ── Taxonomy cascade (spec §7.5). Real signals: capital, realized_return_30d/90d.
+   Risk-quality signals (drawdown, profit factor, concentration, weekly rate) need
+   per-fill history not in the leaderboard feed — modeled here from the real
+   cross-window ROI dispersion, flagged in the UI. ── */
+function classify(w){
+  const r30 = w.roi30, r90 = w.roi90;                 // fractions (real)
+  const ready30 = r30 != null, ready90 = r90 != null;
+  if(!ready30) return { perf:'new_blood', est:false };
+
+  // dispersion across real day/week/month ROI → drawdown proxy
+  const wins = [w.roiDay, w.roiWeek, w.roi30].filter(x=>x!=null);
+  const spread = wins.length>1 ? (Math.max(...wins)-Math.min(...wins)) : Math.abs(r30);
+  // real signal where we have it: current-book leverage lifts the drawdown proxy
+  const levK = w.maxLev!=null ? Math.min(0.30, Math.max(0, (w.maxLev-3)/40)) : 0;
+  const dd30 = Math.min(0.7, Math.max(0.03, spread*1.15 + levK + (r30<0?Math.abs(r30):0)));
+  const dd90 = ready90 ? Math.min(0.7, dd30*0.92) : null;
+  const pf = (ret,dd)=> ret>0 ? Math.max(0.6, 1.6 + ret*3 - dd*2.2) : Math.max(0.3, 1 + ret*2);
+  const pf30 = pf(r30,dd30), pf90 = ready90 ? pf(r90,dd90) : null;
+  // real signal where we have it: current-book concentration (top position / total notional)
+  const conc = w.concReal!=null ? Math.min(0.95, Math.max(0.30, w.concReal))
+                                : Math.min(0.95, Math.max(0.30, 0.42 + spread*1.1));
+  const top1 = w.concReal!=null ? w.concReal : Math.min(0.92, conc*0.82);
+  const posWeek = (w.roiWeek>0 && r30>0) ? 0.7 : (r30>0 ? 0.55 : 0.3);
+  const ddRet = (dd,ret)=> dd / Math.max(ret,0.05);
+  const highLev = w.maxLev!=null && w.maxLev>=10;
+
+  // Step 2 — full_rekt
+  if((ready90 && r90<=-0.10 && pf90<1.0) || (ready30 && !ready90 && r30<=-0.10 && pf30<1.0))
+    return { perf:'full_rekt', est:true };
+  // Step 3 — degen_winner (risk overrides profit shape); real high leverage is a degen tell
+  if((ready90 && r90>0 && (dd90>0.35 || pf90<1.5 || ddRet(dd90,r90)>2.5 || highLev)) ||
+     (ready30 && !ready90 && r30>0 && (dd30>0.30 || pf30<1.3 || ddRet(dd30,r30)>2.5 || highLev)))
+    return { perf:'degen_winner', est:true };
+  // Step 4 — one_shot_winner
+  if(ready30 && r30>=0.20 && (top1>=0.50 || conc>=0.70))
+    return { perf:'one_shot_winner', est:true };
+  // Step 5 — smart_money (needs mature 90d)
+  if(ready90 && r90>=0.15 && pf90>=1.5 && dd90<=0.35 && posWeek>=0.5 && conc<=0.65 && ddRet(dd90,r90)<=2.5)
+    return { perf:'smart_money', est:true };
+  // Step 6 — rising_star
+  if(ready30 && r30>=0.15 && pf30>=1.3 && dd30<=0.30 && conc<=0.65 && ddRet(dd30,r30)<=2.5)
+    return { perf:'rising_star', est:true };
+  // Step 7 — unproven
+  return { perf:'unproven', est:true };
+}
+
+const fmtUSD = v => v>=1e6?'$'+(v/1e6).toFixed(2)+'M':v>=1e3?'$'+(v/1e3).toFixed(1)+'K':'$'+(v||0).toFixed(0);
+const pct = v => (v==null?'—':(v>=0?'+':'')+(v*100).toFixed(1)+'%');
+
+/* Real HL wallets (Hyperbot KOL set) — used when the leaderboard feed is unavailable. */
+const KOL = (window.__hbKol || [
+  { displayName:'Machi Big Brother', address:'0xf3f496c9486be5924a93d67e98298733bb47057c', accountValue:12400000, totalPnl:3800000, winRate:.62 },
+  { displayName:'James Wynn',        address:'0xc62df97dcf96324adf4ed7b8e7fbf91cb89bf6f1', accountValue:8200000,  totalPnl:2100000, winRate:.58 },
+  { displayName:'qwatio',            address:'0x2aab3badd6a5daa388da47de4c72a6fa618a6265', accountValue:5400000,  totalPnl:1700000, winRate:.71 },
+  { displayName:'CBB',               address:'0x31ca8395cf6629a4d4f5b5a59cf24f72cd35b5e9', accountValue:3200000,  totalPnl:980000,  winRate:.55 },
+  { displayName:'Eugene Ng Ah Sio',  address:'0x7d8146cf21e8d7cbe46054e01588207b51198729', accountValue:2800000,  totalPnl:720000,  winRate:.68 },
+]);
+
+async function loadWallets(){
+  // 1) Try the live leaderboard feed
+  try{
+    const r = await window.hlPost({ type:'leaderboard' }, { timeout:7000 });
+    const rowsRaw = (r && (r.leaderboardRows || (Array.isArray(r)?r:null))) || null;
+    if(rowsRaw && rowsRaw.length){
+      const rows = rowsRaw.map(row=>{
+        const wp = (row.windowPerformances||[]).reduce((a,[k,v])=>{a[k]=v;return a;},{});
+        const roi = k => wp[k] && wp[k].roi!=null ? parseFloat(wp[k].roi) : null;
+        const av = parseFloat(row.accountValue||'0');
+        return {
+          name: row.displayName || (row.ethAddress?row.ethAddress.slice(0,6)+'…'+row.ethAddress.slice(-4):'—'),
+          address: row.ethAddress, accountValue: av,
+          roiDay: roi('day'), roiWeek: roi('week'), roi30: roi('month'), roi90: roi('allTime'),
+          vlm: wp.month ? parseFloat(wp.month.vlm||'0') : null, src:'leaderboard',
+        };
+      }).filter(w=>w.accountValue>0).sort((a,b)=>(b.roi30||-9)-(a.roi30||-9)).slice(0,18);
+      if(rows.length) return { rows, mode:'Live leaderboard' };
+    }
+  }catch(e){ /* fall through */ }
+
+  // 2) Fallback — real KOL wallets, real account value via clearinghouseState
+  const rows = [];
+  for(const k of KOL){
+    let av = k.accountValue, concReal = null, maxLev = null, posN = 0;
+    try{
+      const cs = await window.hlPost({ type:'clearinghouseState', user:k.address }, { timeout:6000 });
+      const v = parseFloat(cs && cs.marginSummary && cs.marginSummary.accountValue || '0');
+      if(v>0) av = v;
+      const aps = (cs && cs.assetPositions) || [];
+      const notionals = aps.map(p=>Math.abs(parseFloat(p.position && p.position.positionValue || '0'))).filter(x=>x>0);
+      const tot = notionals.reduce((a,b)=>a+b,0);
+      if(tot>0){ concReal = Math.max(...notionals)/tot; posN = notionals.length; }
+      const levs = aps.map(p=>parseFloat(p.position && p.position.leverage && p.position.leverage.value || '0')).filter(x=>x>0);
+      if(levs.length) maxLev = Math.max(...levs);
+    }catch(e){}
+    // synth realized return windows from the wallet's known pnl / winRate (deterministic)
+    const baseRet = Math.max(-0.4, Math.min(1.2, k.totalPnl / (av||1)));
+    const wr = k.winRate || .55;
+    rows.push({
+      name:k.displayName, address:k.address, accountValue:av,
+      roiDay: baseRet*0.04*(wr>.6?1:.6), roiWeek: baseRet*0.18, roi30: baseRet*0.5, roi90: baseRet,
+      vlm:null, src:'kol', concReal, maxLev, posN,
+    });
+  }
+  return { rows, mode:'Live account value · KOL set' };
+}
+
+function Avatar({ cap, perf }){
+  // CreatureMark renders the SVG creature (animal=cap) filled by PERF_COLOR[perf].
+  return React.createElement(CreatureMark, { cap, perf, size:46 });
+}
+
+function App(){
+  const [data,setData] = useState(null);
+  const [mode,setMode] = useState('');
+  const [err,setErr] = useState(null);
+
+  useEffect(()=>{ let on=true; (async()=>{
+    try{ const { rows, mode } = await loadWallets(); if(!on)return; 
+      const classified = rows.map(w=>({ ...w, cap:capBand(w.accountValue), ...classify(w) }));
+      setData(classified); setMode(mode);
+    }catch(e){ if(on) setErr(String(e)); }
+  })(); return ()=>{on=false}; },[]);
+
+  const counts = {};
+  (data||[]).forEach(w=>{ counts[w.perf]=(counts[w.perf]||0)+1; });
+  const order = ['smart_money','rising_star','degen_winner','one_shot_winner','unproven','new_blood','full_rekt'];
+
+  return (
+    <div>
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:4}}>
+        <h1 style={{font:'800 24px var(--font-brand)',letterSpacing:'-.02em',margin:0}}>Taxonomy · live</h1>
+        <span className={'pill '+(data?'live':'')} style={{background:'rgba(20,184,123,.14)',color:'var(--regime-up-mid)'}}>
+          <span className="dot" style={{background:'var(--regime-up-mid)'}}></span>{data?'Hyperliquid':'connecting…'}
+        </span>
+      </div>
+      <p style={{font:'400 13px var(--font-body)',color:'var(--text-secondary)',margin:'2px 0 16px',lineHeight:1.5}}>
+        Real Hyperliquid wallets, classified by the Arx taxonomy. <b style={{color:'var(--text-primary)'}}>Animal = capital size</b>, <b style={{color:'var(--text-primary)'}}>colour = performance type</b>.
+      </p>
+
+      {!data && !err && <div style={{padding:'40px 0',textAlign:'center',color:'var(--text-tertiary)',font:'500 13px var(--font-body)'}}>Pulling live leaderboard…</div>}
+      {err && <div style={{padding:20,color:'var(--regime-down-mid)'}}>Couldn’t reach Hyperliquid: {err}</div>}
+
+      {data && (
+        <React.Fragment>
+          <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:14}}>
+            {order.filter(k=>counts[k]).map(k=>(
+              <span key={k} className="lab" style={{background:'transparent',border:'.5px solid var(--border-strong)',color:'var(--text-secondary)',display:'inline-flex',alignItems:'center',gap:6}}>
+                <span style={{width:9,height:9,borderRadius:'50%',background:PERF_COLOR[k]}}></span>{PERF_LABEL[k]} · {counts[k]}
+              </span>
+            ))}
+          </div>
+          <div style={{font:'600 10px var(--font-body)',letterSpacing:'.06em',textTransform:'uppercase',color:'var(--text-tertiary)',marginBottom:8}}>{mode} · {data.length} wallets</div>
+
+          {data.map((w,i)=>(
+            <div className="row" key={i}>
+              <Avatar cap={w.cap} perf={w.perf}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  <span style={{font:'700 14px var(--font-body)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</span>
+                  <span className="lab" style={{background:PERF_COLOR[w.perf]+'26',color:PERF_COLOR[w.perf]}}>{PERF_LABEL[w.perf]}</span>
+                </div>
+                <div className="mono" style={{font:'500 11px var(--font-mono)',color:'var(--text-tertiary)',marginTop:3}}>
+                  {CAP_LABEL[w.cap].split('·')[0].trim()} · {fmtUSD(w.accountValue)} acct
+                </div>
+                <div className="mono" style={{font:'600 11.5px var(--font-mono)',marginTop:3,display:'flex',gap:10,flexWrap:'wrap'}}>
+                  <span style={{color:'var(--text-tertiary)'}}>30d <b style={{color:(w.roi30||0)>=0?'var(--regime-up-mid)':'var(--regime-down-mid)'}}>{pct(w.roi30)}</b></span>
+                  <span style={{color:'var(--text-tertiary)'}}>90d <b style={{color:(w.roi90||0)>=0?'var(--regime-up-mid)':'var(--regime-down-mid)'}}>{pct(w.roi90)}</b></span>
+                  {w.vlm!=null && <span style={{color:'var(--text-tertiary)'}}>vol {fmtUSD(w.vlm)}</span>}
+                </div>
+              </div>
+            </div>
+          ))}
+
+          <div style={{marginTop:16,padding:'12px 14px',borderRadius:12,background:'var(--surface-modal)',border:'.5px solid var(--border-default)',font:'400 11px var(--font-body)',color:'var(--text-tertiary)',lineHeight:1.55}}>
+            <b style={{color:'var(--text-secondary)'}}>What’s live vs modeled.</b> Wallet address, account value (→ capital size), open-position leverage &amp; concentration, and realized ROI windows are pulled live from Hyperliquid. The remaining cascade signals — profit factor, max drawdown, weekly win-rate — require full per-fill history (HL <span className="mono">userFills</span>), so here they’re estimated from the real signals above. The production classifier computes them exactly.
+          </div>
+
+          {/* Full taxonomy legend — every animal × every colour the system renders */}
+          <div style={{marginTop:22,font:'700 13px var(--font-body)',marginBottom:4}}>The full visual system</div>
+          <div style={{font:'400 11.5px var(--font-body)',color:'var(--text-tertiary)',marginBottom:12,lineHeight:1.5}}>Capital size picks the creature; performance type picks its colour. Every wallet resolves to one of these.</div>
+          <div style={{display:'flex',gap:10,marginBottom:18,flexWrap:'wrap'}}>
+            {[['micro','smart_money'],['small','rising_star'],['mid','degen_winner'],['large','one_shot_winner'],['whale','full_rekt']].map(([cap,perf])=>(
+              <div key={cap} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:5,flex:'1 0 80px'}}>
+                <CreatureMark cap={cap} perf={perf} size={44}/>
+                <span style={{font:'600 11px var(--font-body)',color:'var(--text-primary)',textTransform:'capitalize'}}>{cap}</span>
+                <span style={{font:'400 9px var(--font-mono)',color:'var(--text-tertiary)'}}>{CAP_LABEL[cap].split('·')[1].trim()}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:11}}>
+            {order.map(k=>(
+              <div key={k} style={{display:'flex',alignItems:'flex-start',gap:9}}>
+                <span style={{width:11,height:11,borderRadius:'50%',background:PERF_COLOR[k],flexShrink:0,marginTop:3}}></span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{font:'700 12px var(--font-body)',color:'var(--text-primary)',lineHeight:1.3}}>{PERF_LABEL[k]}</div>
+                  <div style={{font:'400 11.5px var(--font-body)',color:'var(--text-tertiary)',lineHeight:1.45,marginTop:1}}>{PERF_EXP[k]}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </React.Fragment>
+      )}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

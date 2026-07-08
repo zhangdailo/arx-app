@@ -393,6 +393,17 @@ function WalletFunding({ embed, win:winProp, setWin:setWinProp }={}){
   const W=WIN[win], dUp=W.delta>=0;
   const f = win==='24H'?1: win==='7D'?4.2:13;
   const fmtM=v=>(v>=0?'+$':'−$')+Math.abs(Math.round(v))+'M';
+  // ── Real bridge TVL from /hlbridge (Arbitrum on-chain, Hyperliquid USDC bridge) ──
+  const [bridge, setBridge] = dS(null);
+  dE(() => {
+    const KEY = '__arxBridgeCache';
+    const cached = window[KEY];
+    if (cached && Date.now() - cached.ts < 120000) { setBridge(cached.data); return; }
+    fetch('https://arx-news.daryl-teo.workers.dev/hlbridge')
+      .then(r => r.json())
+      .then(d => { if (d.tvl) { window[KEY] = { data: d, ts: Date.now() }; setBridge(d); } })
+      .catch(() => {});
+  }, []);
   // Real tracked-wallet flow proxy for 24H (our own roster's account-value deltas —
   // NOT market-wide). 7D/30D stay modeled since we have no history for those windows yet.
   const [trackedTick, setTrackedTick] = dS(0);
@@ -437,6 +448,36 @@ function WalletFunding({ embed, win:winProp, setWin:setWinProp }={}){
             </div>
             <div style={{padding:'0 20px 12px', font:'500 10.5px var(--font-body)', color:'var(--text-tertiary)'}}>Capital deposited onto <b style={{color:'var(--text-secondary)'}}>Hyperliquid</b> — observed on-chain. Leads positioning.</div>
           </>}
+      {/* BRIDGE TVL — real on-chain Hyperliquid USDC bridge (Arbitrum) */}
+      {bridge && bridge.tvl && (
+        <div style={{margin:'0 20px 10px', borderRadius:14, border:'.5px solid var(--border-default)', background:'linear-gradient(140deg, color-mix(in oklab, var(--color-violet-500) 10%, var(--surface-elevated)), var(--surface-elevated) 65%)', padding:'12px 15px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+          <div>
+            <div style={{font:'600 8.5px var(--font-body)', letterSpacing:'.07em', textTransform:'uppercase', color:'var(--text-tertiary)', marginBottom:4}}>HL Bridge TVL · On-chain</div>
+            <div style={{font:'800 24px var(--font-brand)', letterSpacing:'-.02em', lineHeight:1, color:'var(--text-primary)'}}>
+              ${(bridge.tvl/1e6).toFixed(0)}M
+            </div>
+            <div style={{font:'500 9.5px var(--font-body)', color:'var(--text-tertiary)', marginTop:3}}>USDC locked in Arbitrum bridge</div>
+          </div>
+          <div style={{textAlign:'right'}}>
+            {bridge.change24h != null && (
+              <div style={{font:'700 13px var(--font-mono)', color: bridge.change24h >= 0 ? upc : dnc, marginBottom:4}}>
+                {bridge.change24h >= 0 ? '+' : '−'}${Math.abs(bridge.change24h/1e6).toFixed(1)}M
+                <span style={{font:'500 9px var(--font-body)', color:'var(--text-tertiary)', display:'block', fontFamily:'var(--font-body)', fontWeight:500}}>24h change</span>
+              </div>
+            )}
+            {bridge.change1h != null && (() => {
+              const abs1h = Math.abs(bridge.change1h);
+              const fmt1h = abs1h >= 1e6 ? (abs1h/1e6).toFixed(1)+'M' : (abs1h/1e3).toFixed(0)+'K';
+              return (
+                <div style={{font:'600 11px var(--font-mono)', color: bridge.change1h >= 0 ? upc : dnc}}>
+                  {bridge.change1h >= 0 ? '+' : '−'}${fmt1h}
+                  <span style={{font:'500 9px var(--font-body)', color:'var(--text-tertiary)', display:'block', fontFamily:'var(--font-body)', fontWeight:500}}>1h change</span>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
       {/* TIER 1 — net headline + thin in/out + trendline */}
       <div style={{margin:'0 20px', borderRadius:16, border:'.5px solid var(--border-default)', background:'linear-gradient(140deg, color-mix(in oklab, var(--regime-up-mid) 12%, var(--surface-elevated)), var(--surface-elevated) 62%)', padding:'14px 15px'}}>
         <div style={{font:'600 9px var(--font-body)', letterSpacing:'.06em', textTransform:'uppercase', color:'var(--text-tertiary)'}}>{flowLabel} · {win}</div>

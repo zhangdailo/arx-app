@@ -1238,7 +1238,8 @@ function smTradeTag(w){
 }
 function SmartTradeStream({ onPick }){
   const VERBS=[['opened',1],['added to',1],['closed',0],['reduced',0]];
-  const evs = WALLETS.filter(w=>w.positions&&w.positions.length).slice(0,8).map((w,i)=>{
+  // Only real on-chain wallets — hlLive means clearinghouseState loaded successfully
+  const evs = WALLETS.filter(w=>w.hlLive&&w.positions&&w.positions.length).slice(0,8).map((w,i)=>{
     const p = w.positions[i%w.positions.length] || w.positions[0];
     const v = VERBS[i%VERBS.length];
     return { w, verb:v[0], dir:p.dir, sym:p.sym, size:p.size, lev:(p.lev||'').replace('x','×') };
@@ -1272,6 +1273,17 @@ function WalletsScreen({ onCopy }) {
   const [q, setQ] = uS('');
   const [,bumpWhales] = uS(0);
   React.useEffect(()=>{ const h=()=>bumpWhales(x=>x+1); window.addEventListener('arx-whales-live', h); return ()=>window.removeEventListener('arx-whales-live', h); }, []);
+  // Real HL stat: latest daily active wallet count from stats-data.hyperliquid.xyz
+  const [hlUserCount, setHlUserCount] = uS(null);
+  React.useEffect(()=>{
+    const KEY='arx_hl_users', TTL=6*3600*1000;
+    try { const c=sessionStorage.getItem(KEY); if(c){ const p=JSON.parse(c); if(Date.now()-p.t<TTL){ setHlUserCount(p.v); return; } } } catch(e){}
+    fetch('https://stats-data.hyperliquid.xyz/Mainnet/daily_unique_users')
+      .then(r=>r.json()).then(d=>{ if(!Array.isArray(d)||!d.length) return;
+        const v=d[d.length-1].n; setHlUserCount(v);
+        try{ sessionStorage.setItem(KEY,JSON.stringify({v,t:Date.now()})); }catch(e){} })
+      .catch(()=>{});
+  },[]);
   const [cluster, setCluster] = uS(null);          // population, single-select
   const [sel, setSel] = uS(null);
   const [custom, setCustom] = uS(GUARD_OFF);     // default lens: All wallets — customize is opt-in
@@ -1338,16 +1350,20 @@ function WalletsScreen({ onCopy }) {
   // Aggregations follow the lens — honest math. “Typical copier” = median wallet ROI for the
   // window × ~55% realized copier capture (fees, slippage, skipped trades). $ figures are sums.
   const fmt$ = (v) => { const a = Math.abs(v); const t = a>=1e9 ? (a/1e9).toFixed(1)+'B' : a>=1e6 ? (a/1e6).toFixed(1)+'M' : a>=1e3 ? (a/1e3).toFixed(0)+'K' : a.toFixed(0); return (v<0?'−$':'$')+t; };
+  const fmtN = (n) => n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? Math.round(n/1e3)+'K' : String(n);
+  // agg: real on-chain data from hlLive wallets (clearinghouseState, loaded by arx-whales.jsx).
+  // totalUpnl = sum of unrealized PnL across live-loaded wallets — real, changes with price.
+  // medRoi = median (liveUpnl / accountValue) × 100 — honest snapshot, not ARX copy-trading history.
   const agg = (() => {
-    const n = list.length;
-    const rois = list.map(w => { const st = wstat(w); return st ? st.roi : 0; }).sort((a,b)=>a-b);
+    const live = WALLETS.filter(w => w.hlLive && (w.aumV||0) > 0);
+    const n = live.length;
+    if (!n) return { n:0, profs:0, medRoi:0, totalUpnl:0, oi:0 };
+    const rois = live.map(w => (w.liveUpnl||0) / (w.aumV||1)).sort((a,b)=>a-b);
     const profs = rois.filter(r => r > 0).length;
-    const mid = n ? (n % 2 ? rois[(n-1)/2] : (rois[n/2-1] + rois[n/2]) / 2) : 0;
-    const medPct = mid * 0.55;
-    const wf = { '24H':.04, '7D':.22, '30D':1, '90D':2.4 }[win];
-    const cp = list.reduce((t,w) => t + w.copierPnlV, 0) * wf;
-    const oi = list.reduce((t,w) => t + w.aumV, 0);
-    return { n, profs, medPct, cp, oi };
+    const mid = n % 2 ? rois[(n-1)/2] : (rois[n/2-1] + rois[n/2]) / 2;
+    const totalUpnl = live.reduce((t,w) => t + (w.liveUpnl||0), 0);
+    const oi = live.reduce((t,w) => t + (w.aumV||0), 0);
+    return { n, profs, medRoi: mid * 100, totalUpnl, oi };
   })();
 
   const popCaption = cluster
@@ -1484,31 +1500,36 @@ function WalletsScreen({ onCopy }) {
          the market mostly loses → copiers on Arx earn → what the typical copier made. Fluid widths. */}
       <div style={{margin:'0 20px 22px', borderRadius:16, background:'var(--surface-elevated)', border:'.5px solid var(--border-default)'}}>
         <div style={{padding:'14px 16px 13px'}}>
-          <div style={{font:'500 10px var(--font-body)', color:'var(--text-tertiary)', textTransform:'uppercase', letterSpacing:'.05em'}}>Wallets on Hyperliquid</div>
-          <div className="num" style={{font:'700 24px var(--font-mono)', letterSpacing:'-.02em', marginTop:5}}>1.9M<span style={{color:'var(--text-tertiary)', fontSize:14, fontWeight:500}}> trading</span></div>
-          <div style={{display:'flex', height:5, borderRadius:3, overflow:'hidden', marginTop:9}}>
-            <div style={{flex:24, background:'var(--regime-up-mid)'}}/>
-            <div style={{flex:76, background:'var(--border-strong)', opacity:.6}}/>
+          <div style={{font:'500 10px var(--font-body)', color:'var(--text-tertiary)', textTransform:'uppercase', letterSpacing:'.05em'}}>Daily active wallets · Hyperliquid</div>
+          <div className="num" style={{font:'700 24px var(--font-mono)', letterSpacing:'-.02em', marginTop:5}}>
+            {hlUserCount ? fmtN(hlUserCount) : '—'}<span style={{color:'var(--text-tertiary)', fontSize:14, fontWeight:500}}> today</span>
           </div>
-          <div className="num" style={{display:'flex', justifyContent:'space-between', font:'500 11px var(--font-mono)', marginTop:6}}>
-            <span style={{color:'var(--regime-up-mid)'}}>24% in profit</span>
-            <span style={{color:'var(--text-tertiary)'}}>76% not</span>
-          </div>
-        </div>
-        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', borderTop:'.5px solid var(--border-default)'}}>
-          <div style={{padding:'12px 16px 13px', minWidth:0}}>
-            <div style={{font:'500 10px var(--font-body)', color:'var(--text-tertiary)', textTransform:'uppercase', letterSpacing:'.05em', lineHeight:1.4}}>Copiers earned · {win}</div>
-            <div className="num" style={{font:'700 21px var(--font-mono)', letterSpacing:'-.02em', marginTop:4, color: agg.cp>=0?'var(--regime-up-mid)':'var(--regime-down-mid)'}}>{fmt$(agg.cp)}</div>
-            <div style={{font:'400 10.5px var(--font-body)', color:'var(--text-tertiary)', marginTop:3, lineHeight:1.35}}>copying the proven few</div>
-          </div>
-          <div style={{padding:'12px 16px 13px', borderLeft:'.5px solid var(--border-default)', minWidth:0}}>
-            <div style={{font:'500 10px var(--font-body)', color:'var(--text-tertiary)', textTransform:'uppercase', letterSpacing:'.05em', lineHeight:1.4}}>Typical copier · {win}</div>
-            <div className="num" style={{font:'700 21px var(--font-mono)', letterSpacing:'-.02em', marginTop:4, color: agg.medPct>=0?'var(--regime-up-mid)':'var(--regime-down-mid)'}}>{(agg.medPct>=0?'+':'−')+Math.abs(agg.medPct).toFixed(1)+'%'}</div>
-            <div className="num" style={{font:'500 10.5px var(--font-mono)', color:'var(--text-secondary)', marginTop:3, lineHeight:1.35}}>$500 → ${Math.round(500*(1+agg.medPct/100))}</div>
+          <div style={{marginTop:9, font:'400 10.5px var(--font-body)', color:'var(--text-tertiary)'}}>
+            {WALLETS.filter(w=>w.hlLive).length > 0
+              ? WALLETS.filter(w=>w.hlLive).length+' wallets tracked live · '+fmt$(WALLETS.filter(w=>w.hlLive).reduce((s,w)=>s+(w.aumV||0),0))+' AUM'
+              : 'Loading live wallet data…'}
           </div>
         </div>
-        <div style={{padding:'8px 16px 10px', borderTop:'.5px solid var(--border-default)', font:'400 10.5px var(--font-body)', color:'var(--text-tertiary)', lineHeight:1.45}}>
-          Typical = median copier — resists whale skew · after fees · past results don’t predict
+        <div style={{display:’grid’, gridTemplateColumns:’1fr 1fr’, borderTop:’.5px solid var(--border-default)’}}>
+          <div style={{padding:’12px 16px 13px’, minWidth:0}}>
+            <div style={{font:’500 10px var(--font-body)’, color:’var(--text-tertiary)’, textTransform:’uppercase’, letterSpacing:’.05em’, lineHeight:1.4}}>Live portfolio P&L</div>
+            <div className="num" style={{font:’700 21px var(--font-mono)’, letterSpacing:’-.02em’, marginTop:4, color: agg.totalUpnl>=0?’var(--regime-up-mid)’:’var(--regime-down-mid)’}}>
+              {agg.n > 0 ? fmt$(agg.totalUpnl) : ‘—‘}
+            </div>
+            <div style={{font:’400 10.5px var(--font-body)’, color:’var(--text-tertiary)’, marginTop:3, lineHeight:1.35}}>
+              {agg.n > 0 ? agg.n+’ wallets · open positions’ : ‘loading…’}
+            </div>
+          </div>
+          <div style={{padding:’12px 16px 13px’, borderLeft:’.5px solid var(--border-default)’, minWidth:0}}>
+            <div style={{font:’500 10px var(--font-body)’, color:’var(--text-tertiary)’, textTransform:’uppercase’, letterSpacing:’.05em’, lineHeight:1.4}}>Median wallet ROI</div>
+            <div className="num" style={{font:’700 21px var(--font-mono)’, letterSpacing:’-.02em’, marginTop:4, color: agg.medRoi>=0?’var(--regime-up-mid)’:’var(--regime-down-mid)’}}>
+              {agg.n > 0 ? (agg.medRoi>=0?’+’:’−’)+Math.abs(agg.medRoi).toFixed(1)+’%’ : ‘—‘}
+            </div>
+            <div style={{font:’400 10.5px var(--font-body)’, color:’var(--text-tertiary)’, marginTop:3, lineHeight:1.35}}>unrealized · live snapshot</div>
+          </div>
+        </div>
+        <div style={{padding:’8px 16px 10px’, borderTop:’.5px solid var(--border-default)’, font:’400 10.5px var(--font-body)’, color:’var(--text-tertiary)’, lineHeight:1.45}}>
+          On-chain unrealized P&L from {agg.n > 0 ? agg.n : ‘—‘} live wallets · changes with price · not ARX copy-trading history
         </div>
       </div>
 

@@ -1510,26 +1510,26 @@ function WalletsScreen({ onCopy }) {
               : 'Loading live wallet data…'}
           </div>
         </div>
-        <div style={{display:’grid’, gridTemplateColumns:’1fr 1fr’, borderTop:’.5px solid var(--border-default)’}}>
-          <div style={{padding:’12px 16px 13px’, minWidth:0}}>
-            <div style={{font:’500 10px var(--font-body)’, color:’var(--text-tertiary)’, textTransform:’uppercase’, letterSpacing:’.05em’, lineHeight:1.4}}>Live portfolio P&amp;L</div>
-            <div className="num" style={{font:’700 21px var(--font-mono)’, letterSpacing:’-.02em’, marginTop:4, color: agg.totalUpnl>=0?’var(--regime-up-mid)’:’var(--regime-down-mid)’}}>
-              {agg.n > 0 ? fmt$(agg.totalUpnl) : ‘—‘}
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', borderTop:'.5px solid var(--border-default)'}}>
+          <div style={{padding:'12px 16px 13px', minWidth:0}}>
+            <div style={{font:'500 10px var(--font-body)', color:'var(--text-tertiary)', textTransform:'uppercase', letterSpacing:'.05em', lineHeight:1.4}}>Live portfolio P&amp;L</div>
+            <div className="num" style={{font:'700 21px var(--font-mono)', letterSpacing:'-.02em', marginTop:4, color: agg.totalUpnl>=0?'var(--regime-up-mid)':'var(--regime-down-mid)'}}>
+              {agg.n > 0 ? fmt$(agg.totalUpnl) : '—'}
             </div>
-            <div style={{font:’400 10.5px var(--font-body)’, color:’var(--text-tertiary)’, marginTop:3, lineHeight:1.35}}>
-              {agg.n > 0 ? agg.n+’ wallets · open positions’ : ‘loading…’}
+            <div style={{font:'400 10.5px var(--font-body)', color:'var(--text-tertiary)', marginTop:3, lineHeight:1.35}}>
+              {agg.n > 0 ? agg.n+' wallets · open positions' : 'loading…'}
             </div>
           </div>
-          <div style={{padding:’12px 16px 13px’, borderLeft:’.5px solid var(--border-default)’, minWidth:0}}>
-            <div style={{font:’500 10px var(--font-body)’, color:’var(--text-tertiary)’, textTransform:’uppercase’, letterSpacing:’.05em’, lineHeight:1.4}}>Median wallet ROI</div>
-            <div className="num" style={{font:’700 21px var(--font-mono)’, letterSpacing:’-.02em’, marginTop:4, color: agg.medRoi>=0?’var(--regime-up-mid)’:’var(--regime-down-mid)’}}>
-              {agg.n > 0 ? (agg.medRoi>=0?’+’:’−’)+Math.abs(agg.medRoi).toFixed(1)+’%’ : ‘—‘}
+          <div style={{padding:'12px 16px 13px', borderLeft:'.5px solid var(--border-default)', minWidth:0}}>
+            <div style={{font:'500 10px var(--font-body)', color:'var(--text-tertiary)', textTransform:'uppercase', letterSpacing:'.05em', lineHeight:1.4}}>Median wallet ROI</div>
+            <div className="num" style={{font:'700 21px var(--font-mono)', letterSpacing:'-.02em', marginTop:4, color: agg.medRoi>=0?'var(--regime-up-mid)':'var(--regime-down-mid)'}}>
+              {agg.n > 0 ? (agg.medRoi>=0?'+':'−')+Math.abs(agg.medRoi).toFixed(1)+'%' : '—'}
             </div>
-            <div style={{font:’400 10.5px var(--font-body)’, color:’var(--text-tertiary)’, marginTop:3, lineHeight:1.35}}>unrealized · live snapshot</div>
+            <div style={{font:'400 10.5px var(--font-body)', color:'var(--text-tertiary)', marginTop:3, lineHeight:1.35}}>unrealized · live snapshot</div>
           </div>
         </div>
-        <div style={{padding:’8px 16px 10px’, borderTop:’.5px solid var(--border-default)’, font:’400 10.5px var(--font-body)’, color:’var(--text-tertiary)’, lineHeight:1.45}}>
-          On-chain unrealized P&amp;L from {agg.n > 0 ? agg.n : ‘—‘} live wallets · changes with price · not ARX copy-trading history
+        <div style={{padding:'8px 16px 10px', borderTop:'.5px solid var(--border-default)', font:'400 10.5px var(--font-body)', color:'var(--text-tertiary)', lineHeight:1.45}}>
+          On-chain unrealized P&amp;L from {agg.n > 0 ? agg.n : '—'} live wallets · changes with price · not ARX copy-trading history
         </div>
       </div>
 

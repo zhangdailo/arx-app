@@ -50,8 +50,8 @@
 <meta name="ext-resource-dependency" content="assets/gold.png"/>
 <meta name="ext-resource-dependency" content="assets/silver.png"/>
 <meta name="ext-resource-dependency" content="assets/sui.png"/>
-<div class="label">arx · mobile UI kit · iOS · web3 dark</div>
 <div class="stage">
+  <div class="label">arx · mobile UI kit · iOS · web3 dark</div>
   <div id="root"></div>
 </div>
 
@@ -76,7 +76,7 @@
 <script type="text/babel" src="extras.jsx?v=15"></script>
 <script type="text/babel" src="you-batch1.jsx?v=6"></script>
 <script type="text/babel" src="you-account.jsx?v=3"></script>
-<script type="text/babel" src="screens.jsx?v=169"></script>
+<script type="text/babel" src="screens.jsx?v=170"></script>
 <script type="text/babel" src="arx-whales.jsx?v=6"></script>
 <script type="text/babel" src="markets-extra.jsx?v=2"></script>
 <script type="text/babel" src="scorecard.jsx?v=1"></script>
@@ -93,7 +93,7 @@
 <script type="text/babel" src="data-sources.jsx?v=4"></script>
 <script type="text/babel" src="screen-record.jsx?v=5"></script>
 <script type="text/babel" src="news-immersive.jsx?v=23"></script>
-<script type="text/babel" src="contests.jsx?v=13"></script>
+<script type="text/babel" src="contests.jsx?v=14"></script>
 <script type="text/babel" src="live-trade.jsx?v=2"></script>
 <script type="text/babel" src="pnl-share.jsx?v=2"></script>
 <script type="text/babel" src="rewards.jsx?v=5"></script>
@@ -217,6 +217,9 @@ function App() {
       {sub.id==='contestWC'     && <ContestWC onBack={closeSub}/>}
       {sub.id==='contestNBA'    && <ContestNBA onBack={closeSub}/>}
       {sub.id==='contestNVDA'   && <ContestNVDA onBack={closeSub}/>}
+      {sub.id==='arxLeaderboard' && <ArxLeaderboard onBack={closeSub}/>}
+      {sub.id==='liveTrade'      && <LiveTradeScreen onBack={closeSub}/>}
+      {sub.id==='liveTradeRoom'  && <LiveTradeRoomScreen roomId={sub.params.room} onBack={closeSub} onToast={showToast}/>}
       {sub.id==='pnlShare'      && <PnLShareCard pos={sub.params.pos} onClose={closeSub} onToast={showToast}/>}
       {sub.id==='rewards'       && <RewardsScreen params={sub.params} onBack={closeSub} onToast={showToast}/>}
       {sub.id==='earn'          && window.EarnHub && <EarnHub onBack={closeSub} onToast={showToast}/>}
@@ -237,9 +240,6 @@ function App() {
       {sub.id==='transfer'         && <TransferFlow onClose={closeSub} onToast={showToast}/>}
       {sub.id==='wallet'           && <WalletSheet onClose={closeSub} onToast={showToast}/>}
       {sub.id==='history'          && <HistoryScreen onBack={closeSub}/>}
-      {sub.id==='arxLeaderboard' && <ArxLeaderboard onBack={closeSub}/>}
-      {sub.id==='liveTrade'      && <LiveTradeScreen onBack={closeSub}/>}
-      {sub.id==='liveTradeRoom'  && <LiveTradeRoomScreen roomId={sub.params.room} onBack={closeSub} onToast={showToast}/>}
     </div>
   );
 
@@ -303,13 +303,13 @@ function App() {
 
   return (
     <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:16}}>
+      <DemoPanel theme={theme} setTheme={setTheme}/>
       <div style={{width:402*fit, height:874*fit, flexShrink:0}}>
         <div id="arx-frame" style={{transform:`scale(${fit})`, transformOrigin:'top left', width:402, height:874}}>
           {device}
         </div>
       </div>
       {window.ScreenRecordButton && <ScreenRecordButton frameSel="#arx-frame"/>}
-      <DemoPanel theme={theme} setTheme={setTheme}/>
     </div>
   );
 }

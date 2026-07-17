@@ -485,61 +485,55 @@ function ArxLeaderboard({ onBack }) {
   ];
   const active = TABS.find(t => t.id === tab);
 
-  const StatUnits = ({ n }) => (
-    <span style={{display:'inline-flex', alignItems:'center', gap:3}}>
-      <IconPerson size={11} color='var(--text-tertiary)'/>{n}
-    </span>
-  );
-
   const DATA = {
     referral: [
-      { name:'Al Jefferson',       stat:842, pts:'42,100' },
-      { name:'The Great Gary',     stat:611, pts:'30,550' },
-      { name:'Rays of Dai Lo',     stat:488, pts:'24,400' },
-      { name:'Bernardo Di Caprio', stat:355, pts:'17,750' },
-      { name:'Anyma Fan',          stat:290, pts:'14,500' },
-      { name:'frostbyte',          stat:204, pts:'10,200' },
-      { name:'ChartNinja',         stat:177, pts:'8,850' },
-      { name:'delta_hedge',        stat:149, pts:'7,450' },
+      { name:'Al Jefferson',       stat:842 },
+      { name:'The Great Gary',     stat:611 },
+      { name:'Rays of Dai Lo',     stat:488 },
+      { name:'Bernardo Di Caprio', stat:355 },
+      { name:'Anyma Fan',          stat:290 },
+      { name:'frostbyte',          stat:204 },
+      { name:'ChartNinja',         stat:177 },
+      { name:'delta_hedge',        stat:149 },
     ],
     volume: [
-      { name:'Bernardo Di Caprio', stat:'$22,000,222', pts:'18,400' },
-      { name:'Al Jefferson',       stat:'$16,480,050', pts:'14,900' },
-      { name:'moonfarmer',         stat:'$11,205,400', pts:'11,200' },
-      { name:'The Great Gary',     stat:'$9,640,180',  pts:'9,600' },
-      { name:'sol_sniper',         stat:'$8,112,900',  pts:'8,100' },
-      { name:'Rays of Dai Lo',     stat:'$6,404,220',  pts:'6,400' },
-      { name:'ChartNinja',         stat:'$5,205,600',  pts:'5,200' },
-      { name:'Anyma Fan',          stat:'$24,000',     pts:'4,700' },
+      { name:'Bernardo Di Caprio', stat:'$22,000,222' },
+      { name:'Al Jefferson',       stat:'$16,480,050' },
+      { name:'moonfarmer',         stat:'$11,205,400' },
+      { name:'The Great Gary',     stat:'$9,640,180'  },
+      { name:'sol_sniper',         stat:'$8,112,900'  },
+      { name:'Rays of Dai Lo',     stat:'$6,404,220'  },
+      { name:'ChartNinja',         stat:'$5,205,600'  },
+      { name:'Anyma Fan',          stat:'$24,000'     },
     ],
     profit: [
-      { name:'The Great Gary',     stat:'+$22,000,000', pts:'68,200' },
-      { name:'Al Jefferson',       stat:'+$514,200',    pts:'51,400' },
-      { name:'delta_hedge',        stat:'+$391,050',    pts:'39,100' },
-      { name:'Rays of Dai Lo',     stat:'+$308,600',    pts:'30,800' },
-      { name:'Bernardo Di Caprio', stat:'+$255,300',    pts:'25,500' },
-      { name:'frostbyte',          stat:'+$201,150',    pts:'20,100' },
-      { name:'moonfarmer',         stat:'+$168,400',    pts:'16,800' },
-      { name:'Anyma Fan',          stat:'+$24,000',     pts:'14,000' },
+      { name:'The Great Gary',     stat:'+$22,000,000' },
+      { name:'Al Jefferson',       stat:'+$514,200'    },
+      { name:'delta_hedge',        stat:'+$391,050'    },
+      { name:'Rays of Dai Lo',     stat:'+$308,600'    },
+      { name:'Bernardo Di Caprio', stat:'+$255,300'    },
+      { name:'frostbyte',          stat:'+$201,150'    },
+      { name:'moonfarmer',         stat:'+$168,400'    },
+      { name:'Anyma Fan',          stat:'+$24,000'     },
     ],
     copiers: [
-      { name:'Al Jefferson',       stat:1240, pts:'12,400' },
-      { name:'Rays of Dai Lo',     stat:980,  pts:'9,800' },
-      { name:'The Great Gary',     stat:842,  pts:'8,420' },
-      { name:'Anyma Fan',          stat:705,  pts:'7,050' },
-      { name:'Bernardo Di Caprio', stat:611,  pts:'6,110' },
-      { name:'ChartNinja',         stat:488,  pts:'4,880' },
-      { name:'sol_sniper',         stat:402,  pts:'4,020' },
-      { name:'frostbyte',          stat:355,  pts:'3,550' },
+      { name:'Al Jefferson',       stat:1240 },
+      { name:'Rays of Dai Lo',     stat:980  },
+      { name:'The Great Gary',     stat:842  },
+      { name:'Anyma Fan',          stat:705  },
+      { name:'Bernardo Di Caprio', stat:611  },
+      { name:'ChartNinja',         stat:488  },
+      { name:'sol_sniper',         stat:402  },
+      { name:'frostbyte',          stat:355  },
     ],
   };
   const rows = DATA[tab];
   const isPeople = tab === 'referral' || tab === 'copiers';
   const top5 = rows.slice(0, 5);
   const bubble = rows.slice(5, 10);
-  const gapToTop5 = isPeople
-    ? (top5[4] ? Number(String(top5[4].stat).replace(/,/g,'')) - Number(String(bubble[0] && bubble[0].stat || 0).replace(/,/g,'')) : 0)
-    : Number(String(top5[4] ? top5[4].pts : 0).replace(/,/g,'')) - Number(String(bubble[0] ? bubble[0].pts : 0).replace(/,/g,''));
+  const numOf = v => Number(String(v).replace(/[^0-9.-]/g,''));
+  const gapToTop5 = top5[4] ? numOf(top5[4].stat) - numOf(bubble[0] && bubble[0].stat || 0) : 0;
+  const gapLabel = isPeople ? `+${gapToTop5.toLocaleString()} ${active.label.toLowerCase()} to Top 5` : `+$${gapToTop5.toLocaleString()} to Top 5`;
   const CTA = {
     referral: { label:'Refer now',  sub:'rewards', params:{tab:'referrals'} },
     volume:   { label:'Trade now',  sub:'trade' },
@@ -562,7 +556,6 @@ function ArxLeaderboard({ onBack }) {
       <Avatar label={r.name} size={isBubble?28:30}/>
       <div style={{display:'flex', flexDirection:'column', flex:1, minWidth:0, gap:0}}>
         <span style={{font:`600 ${isBubble?12.5:13}px var(--font-body)`, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{r.name}</span>
-        <span style={{font:'400 11px var(--font-mono)', color:'var(--text-tertiary)'}}>{isPeople ? <StatUnits n={r.stat}/> : r.stat}</span>
       </div>
       {(!isBubble && i>=3) && (
         <span style={{font:'800 9px var(--font-body)', color:down, background:'rgba(255,77,106,.12)', padding:'2px 6px', borderRadius:999, whiteSpace:'nowrap', flexShrink:0}}>AT RISK</span>
@@ -570,10 +563,9 @@ function ArxLeaderboard({ onBack }) {
       {(isBubble && i<3) && (
         <span style={{font:'800 9px var(--font-body)', color:up, background:'rgba(20,184,123,.14)', padding:'2px 6px', borderRadius:999, whiteSpace:'nowrap', flexShrink:0}}>SO CLOSE</span>
       )}
-      <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end', gap:0, width:56, flexShrink:0}}>
-        <span style={{font:`700 ${isBubble?12.5:13}px var(--font-mono)`, color:'var(--text-primary)'}}>{r.pts}</span>
-        <span style={{font:'400 11px var(--font-body)', color:'var(--text-tertiary)'}}>pts</span>
-      </div>
+      <span style={{font:`700 ${isBubble?13:14}px var(--font-mono)`, color:'var(--text-primary)', flexShrink:0, display:'inline-flex', alignItems:'center', gap:4}}>
+        {isPeople && <IconPerson size={isBubble?12:13} color='var(--text-secondary)'/>}{r.stat.toLocaleString ? r.stat.toLocaleString() : r.stat}
+      </span>
     </div>
   );
 
@@ -605,7 +597,7 @@ function ArxLeaderboard({ onBack }) {
         <div style={{display:'flex', flexDirection:'column', gap:8}}>
           <div style={{display:'flex', justifyContent:'space-between', alignItems:'baseline'}}>
             <span style={cLabel}>On the bubble · keep climbing</span>
-            <span style={{font:'700 11px var(--font-mono)', color:up}}>+{gapToTop5.toLocaleString()} pts to Top 5</span>
+            <span style={{font:'700 11px var(--font-mono)', color:up}}>{gapLabel}</span>
           </div>
           <div style={{borderRadius:'var(--r-lg)', padding:6, border:'1px dashed var(--border-strong)', background:'transparent'}}>{bubble.map((r,i)=>row(r,i,true))}</div>
           <p style={{margin:'2px 4px 0', font:'400 11px var(--font-body)', color:'var(--text-tertiary)', lineHeight:1.4}}>Ranks 6–10 are one strong week from the prize zone. {active.label} more to climb into the Top 5.</p>

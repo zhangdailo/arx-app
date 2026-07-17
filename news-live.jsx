@@ -9,7 +9,6 @@
 const ARX_RSS_FEEDS = [
   { src:'CoinTelegraph', url:'https://cointelegraph.com/rss' },
   { src:'CoinDesk',      url:'https://www.coindesk.com/arc/outboundfeeds/rss/' },
-  { src:'Decrypt',       url:'https://decrypt.co/feed' },
   { src:'The Block',     url:'https://www.theblock.co/rss.xml' },
   { src:'CryptoSlate',   url:'https://cryptoslate.com/feed/' },
   { src:'Yahoo Finance', url:'https://feeds.finance.yahoo.com/rss/2.0/headline?s=BTC-USD,ETH-USD&region=US&lang=en-US' },
@@ -31,6 +30,32 @@ const ARX_NEWS_FALLBACK = [
   { title:'Hyperliquid open interest hits record as perp traders lever up', source:'CoinTelegraph', sym:'HYPE', cat:'On-chain', link:'https://cointelegraph.com', mins:255 },
   { title:'Spot bitcoin ETFs log biggest single-day net inflow in six weeks', source:'CoinDesk', sym:'BTC', cat:'Macro', link:'https://coindesk.com', mins:300 },
 ];
+
+/* On-chain cards — simulated FROM the real tracked-wallet + deposit-flow sources
+   already wired in the app (arx-whales.jsx / arx-elon.jsx), not independently invented.
+   Falls back to plausible on-brand copy if those globals aren't loaded yet. */
+function arxOnChainCards(){
+  const now = Date.now();
+  const W = window.__arxTrackedFlow;
+  const E = window.__arxElonLive;
+  const cards = [];
+  if (W && W.ready) {
+    const net = W.net, inn = W.inn, out = W.out;
+    const fmt = v => v>=1e6? '$'+(v/1e6).toFixed(1)+'M' : '$'+Math.round(v/1e3)+'K';
+    cards.push({ id:'oc-flow', title:`Tracked whales ${net>=0?'add':'trim'} ${fmt(Math.abs(net))} net over 24h`,
+      source:'ARX On-chain', sym:null, cat:'On-chain', link:null, live:false,
+      summary:`${W.nWallets} tracked wallets: ${fmt(inn)} in, ${fmt(out)} out.${W.simulated?' (warming up — early read)':''}`, mins:12 });
+  }
+  if (E && E.loaded && E.positions && E.positions.length) {
+    const top = E.positions[0];
+    cards.push({ id:'oc-elon', title:`Featured wallet now ${top.side.toLowerCase()} ${top.sym} at ${top.lev||''}× — $${(E.accountValue/1e6).toFixed(1)}M account`,
+      source:'ARX On-chain', sym:top.sym, cat:'On-chain', link:null, live:false,
+      summary:`${E.nPos} open positions, unrealized ${E.totalUpnl>=0?'+':'\u2212'}$${Math.abs(Math.round(E.totalUpnl)).toLocaleString()}.`, mins:6 });
+  }
+  cards.push({ id:'oc-hl1', title:'Hyperliquid perp open interest holds near record across majors', source:'ARX On-chain', sym:'BTC', cat:'On-chain', link:null, live:false, summary:'Aggregate OI across tracked majors stayed elevated over the last session.', mins:45 });
+  return cards.map(c => ({ ...c, ts: now - c.mins*60000, image:null, body:[c.summary], why:null, crypto:true }));
+}
+window.arxOnChainCards = arxOnChainCards;
 function arxFallbackNews(){
   const now = Date.now();
   return ARX_NEWS_FALLBACK.map((n,i) => ({
@@ -76,8 +101,7 @@ function arxMapItem(it, src){
   const title = arxStripHtml(it.title); if(!title) return null;
   const summary = arxStripHtml(it.description).slice(0, 220);
   const text = title + ' ' + summary;
-  const rawImg = it.imageUrl || it.thumbnail || (it.enclosure && it.enclosure.link) || null;
-  const img = rawImg ? rawImg.replace(/&amp;/g, '&') : null;
+  const img = it.thumbnail || (it.enclosure && it.enclosure.link) || null;
   return {
     id: 'live-' + src + '-' + (Date.parse(it.pubDate)||0) + '-' + title.slice(0,20).replace(/\W+/g,''),
     title, link: it.link || '', ts: Date.parse(it.pubDate) || Date.now(), source: src,
@@ -118,13 +142,12 @@ async function arxLoadLiveNews(force){
     if (raw && !force){ const c = JSON.parse(raw); if (c && c.fetchedAt && (Date.now()-c.fetchedAt) < ARX_NEWS_TTL && c.items && c.items.length) return c.items; }
   } catch(e){}
 
-  // backend: localStorage override first, then built-in worker
-  const ARX_NEWS_WORKER = 'https://arx-news.daryl-teo.workers.dev';
-  const endpoint = (()=>{ try { return localStorage.getItem('arx_news_url') || ARX_NEWS_WORKER; } catch(e){ return ARX_NEWS_WORKER; } })();
+  // optional backend override (arx_news_url)
+  const endpoint = (()=>{ try { return localStorage.getItem('arx_news_url'); } catch(e){ return null; } })();
   if (endpoint){
     try { const j = await arxFetchJson(endpoint, 9000); const arr = Array.isArray(j) ? j : (j.items||[]);
       const mapped = arr.map(it => arxMapItem(it, it.source||'Newswire')).filter(Boolean);
-      if (mapped.length){ const items = mapped.sort((a,b)=>b.ts-a.ts).slice(0,100);
+      if (mapped.length){ const items = mapped.sort((a,b)=>b.ts-a.ts).slice(0,30);
         try { sessionStorage.setItem(ARX_NEWS_CACHE_KEY, JSON.stringify({ fetchedAt:Date.now(), items })); } catch(e){}
         return items; } } catch(e){}
   }
@@ -148,7 +171,7 @@ async function arxLoadLiveNews(force){
     if (got.length) merged.push(...got);
   }
   merged.sort((a,b)=>b.ts-a.ts);
-  const items = merged.slice(0, 100);
+  const items = merged.slice(0, 30);
 
   if (items.length){
     try { sessionStorage.setItem(ARX_NEWS_CACHE_KEY, JSON.stringify({ fetchedAt:Date.now(), items })); } catch(e){}
@@ -157,7 +180,8 @@ async function arxLoadLiveNews(force){
   // stale cache if present
   try { const raw = sessionStorage.getItem(ARX_NEWS_CACHE_KEY); if (raw){ const c = JSON.parse(raw); if (c && c.items && c.items.length) return c.items; } } catch(e){}
   // last resort — curated real headlines so News is never empty and Lucid has a feed
-  return arxFallbackNews();
+  const oc = arxOnChainCards();
+  return oc.concat(arxFallbackNews());
 }
 
 /* store + pub/sub so screens re-render when news lands */
@@ -223,55 +247,45 @@ function AlsoListedStrip({ text }){
 function LiveArticleScreen({ item, onBack }){
   const n = item || {};
   const sym = n.sym;
-  const img = ogImage || n.image || (window.arxFeedImg ? arxFeedImg(sym) : null);
+  const img = n.image || (window.arxFeedImg ? arxFeedImg(sym) : null);
   const im = window.arxFindInstrument ? arxFindInstrument(sym) : null;
   const pos = im && im.deltaPct>=0;
   const ink = (window.NEWS_CAT && (NEWS_CAT[n.cat]||NEWS_CAT.Asset)||['#7C5BFF'])[0];
   const [rec, setRec] = React.useState(null);   // null=loading · {read, peers:[{sym,note}]}
   const [story, setStory] = React.useState(null); // null=loading · []=paragraphs · false=none
-  const [ogImage, setOgImage] = React.useState(null);
 
-  const ARX_NEWS_WORKER = 'https://arx-news.daryl-teo.workers.dev';
-
-  // Ticker analysis — worker AI first, arxLLMRaw fallback, static themed last
   React.useEffect(()=>{
     let live = true;
-    const themed = sym
-      ? { read:`${sym} is the ticker most tied to this story${im?` — ${pos?'up':'down'} ${Math.abs(im.deltaPct).toFixed(1)}% today`:''}. Watch how it prices the news in.`, peers:[{sym,note:'primary'}] }
-      : { read:'No single ticker dominates — watch majors (BTC, ETH) for the read.', peers:[{sym:'BTC',note:'macro proxy'},{sym:'ETH',note:'risk proxy'}] };
+    const text = (n.title||'') + ' ' + (n.summary||'');
+    const isAI = /\b(ai|model|llm|anthropic|openai|claude|chip|gpu|nvidia|deepseek|export control|semiconductor)\b/i.test(text);
+    const themed = isAI
+      ? { read:`${sym||'NVDA'} is the clearest listed proxy — AI-model expansion drives GPU & compute demand, and the whole model-maker peer group tends to re-rate together on news like this.`,
+          peers:[{sym:'NVDA',note:'GPU / compute'},{sym:'ANTHRP',note:'the subject'},{sym:'OPENAI',note:'model peer'},{sym:'BABA',note:'China AI leader'},{sym:'DEEPSEEK',note:'low-cost model'},{sym:'SPACEX',note:'AI-infra demand'}] }
+      : { read: sym ? `${sym} is the ticker most tied to this story${im?` — ${pos?'up':'down'} ${Math.abs(im.deltaPct).toFixed(1)}% today`:''}. Watch how it prices the news in.` : `No single ticker dominates — watch majors (BTC, ETH) for the read.`,
+          peers: sym ? [{sym, note:'primary'}] : [{sym:'BTC',note:'macro proxy'},{sym:'ETH',note:'risk proxy'}] };
 
-    fetch(`${ARX_NEWS_WORKER}/analyze`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ title: n.title||'', summary: n.summary||'' }),
-    })
-      .then(r=>r.ok ? r.json() : Promise.reject())
-      .then(j=>{ if(live && j.read && Array.isArray(j.peers) && j.peers.length) setRec(j); else throw new Error(); })
-      .catch(()=>{
+    const prompt = `A markets/crypto headline just published:\n"${n.title}"\n${n.summary||''}\n\nReply ONLY with compact JSON, no markdown fences:\n{"read":"1-2 sentences on the PRIMARY ticker and why THIS specific story moves it","peers":[{"sym":"TICKER","note":"3-6 word angle"}]}\nHARD RULES: (1) peers[0] IS the primary ticker and your "read" must be about that exact ticker. (2) Pick the ticker whose price is MOST directly and specifically moved by THIS story — the asset the story is actually about. (3) Do NOT pick COIN or a generic exchange unless the story is specifically about a centralized exchange, a token listing, or exchange regulation. (4) Then add 2-5 more directly-comparable peers.\nUse ARX tickers: crypto perps (BTC,ETH,SOL,HYPE,XRP,DOGE,AVAX,SUI), stocks (NVDA,TSLA,BABA,META,MSFT,AMZN,COIN), commodities (GOLD,OIL), pre-IPO (OPENAI,ANTHRP,DEEPSEEK,SPACEX). Guidance: AI/LLM/chip story -> NVDA,ANTHRP,OPENAI,BABA,DEEPSEEK,SPACEX. Gold/rates/Fed -> GOLD. A specific coin's story -> that coin first. Broad-market regulation -> BTC first. Analysis only, never "buy"/"sell", never financial advice.`;
+    if (window.arxLLMRaw){
+      window.arxLLMRaw(prompt).then(r=>{
         if(!live) return;
-        if(window.arxLLMRaw){
-          const prompt = `Headline: "${n.title}"\nSummary: ${n.summary||''}\nReply ONLY with JSON: {"read":"1-2 sentences on primary ticker","peers":[{"sym":"TICKER","note":"3-6 words"}]}\nTickers: BTC ETH SOL HYPE XRP DOGE AVAX SUI NVDA TSLA BABA COIN GOLD OIL OPENAI ANTHRP DEEPSEEK`;
-          window.arxLLMRaw(prompt).then(r=>{
-            if(!live) return;
-            try { const j=JSON.parse(String(r).replace(/```json|```/g,'').trim()); if(j.read && j.peers) setRec(j); else setRec(themed); } catch(e){ setRec(themed); }
-          }).catch(()=>{ if(live) setRec(themed); });
-        } else { setRec(themed); }
-      });
+        try { const j = JSON.parse(String(r).replace(/```json|```/g,'').trim());
+          if (j && j.read && Array.isArray(j.peers) && j.peers.length){ setRec({ read:j.read, peers:j.peers.slice(0,6) }); return; } } catch(e){}
+        setRec(themed);
+      }).catch(()=>{ if(live) setRec(themed); });
+    } else { setRec(themed); }
     return ()=>{ live=false; };
   }, [n.id]);
 
-  // Full article — worker reader first, fall back to RSS summary
+  // AI-compiled full briefing (original synthesis — we never reproduce source text)
   React.useEffect(()=>{
-    let live = true; setStory(null); setOgImage(null);
-    if(!n.link){ setStory(false); return; }
-    fetch(`${ARX_NEWS_WORKER}/article?url=${encodeURIComponent(n.link)}`)
-      .then(r=>r.ok ? r.json() : Promise.reject())
-      .then(j=>{
-        if(!live) return;
-        if(j.ogImage) setOgImage(j.ogImage);
-        const paras = Array.isArray(j.paragraphs) && j.paragraphs.length ? j.paragraphs : null;
-        setStory(paras || false);
-      })
-      .catch(()=>{ if(live) setStory(false); });
+    let live = true; setStory(null);
+    const prompt = `Write an original news briefing for ARX traders based ONLY on this headline and one-line summary. Do NOT copy or paraphrase any publisher's article text — synthesize the situation in your own words from general knowledge. 3 short paragraphs (~150 words total): what happened, the market context, and what it means for crypto / AI-exposed tickers. Plain paragraphs separated by blank lines, no headings, no markdown. Analysis only, never financial advice.\n\nHeadline: "${n.title}"\nSummary: ${n.summary||''}`;
+    if (window.arxLLMRaw){
+      window.arxLLMRaw(prompt).then(r=>{ if(!live) return;
+        const paras = String(r||'').split(/\n\n+/).map(s=>s.replace(/\s+/g,' ').trim()).filter(Boolean);
+        setStory(paras.length ? paras : false);
+      }).catch(()=>{ if(live) setStory(false); });
+    } else { setStory(false); }
     return ()=>{ live=false; };
   }, [n.id]);
 
@@ -291,15 +305,14 @@ function LiveArticleScreen({ item, onBack }){
         </div>
         {n.summary && <p style={{margin:'16px 0 0', font:'400 15px var(--font-body)', color:'var(--text-secondary)', lineHeight:1.6}}>{n.summary}</p>}
 
-        {(story !== false || n.summary) && <div style={{marginTop:18}}>
+        {story !== false && <div style={{marginTop:18}}>
           <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:8}}>
             <span style={{font:'700 10px var(--font-body)', letterSpacing:'.06em', textTransform:'uppercase', color:'var(--text-tertiary)'}}>The full story</span>
+            <span style={{font:'600 8.5px var(--font-body)', color:'var(--color-violet-500)', background:'rgba(124,91,255,.14)', padding:'2px 7px', borderRadius:999, letterSpacing:'.04em'}}>AI-COMPILED</span>
           </div>
           {story === null
             ? <div style={{display:'flex', flexDirection:'column', gap:8}}>{[1,2,3].map(k=>(<div key={k} style={{height:13, borderRadius:6, width:(k===3?'70%':'100%'), background:'linear-gradient(100deg, var(--surface-elevated) 30%, var(--glass-control-bg) 50%, var(--surface-elevated) 70%)', backgroundSize:'200% 100%', animation:'arxsh 1.3s linear infinite'}}/>))}<style>{'@keyframes arxsh{to{background-position:-200% 0}}'}</style></div>
-            : story
-              ? story.map((p,idx)=>(<p key={idx} style={{margin: idx?'12px 0 0':0, font:'400 14.5px var(--font-body)', color:'var(--text-secondary)', lineHeight:1.62}}>{p}</p>))
-              : <p style={{margin:0, font:'400 14.5px var(--font-body)', color:'var(--text-secondary)', lineHeight:1.62}}>{n.summary}</p>}
+            : story.map((p,idx)=>(<p key={idx} style={{margin: idx?'12px 0 0':0, font:'400 14.5px var(--font-body)', color:'var(--text-secondary)', lineHeight:1.62}}>{p}</p>))}
         </div>}
       </div>
 

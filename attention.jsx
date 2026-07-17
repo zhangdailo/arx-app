@@ -493,20 +493,7 @@ function DailyBrief({ persona = 's7', onTabChange }) {
    ───────────────────────────────────────────────────────────── */
 function NewsStream() {
   const [list, setList] = React.useState('breaking');
-  const [visible, setVisible] = React.useState(12);
-  const sentinelRef = React.useRef(null);
   const { items, live } = useLiveNews();
-
-  React.useEffect(() => { setVisible(12); }, [list]);
-
-  React.useEffect(() => {
-    const el = sentinelRef.current; if (!el) return;
-    const obs = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting) setVisible(v => v + 8);
-    }, { threshold: 0.1 });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [sentinelRef.current]);
   const nsAgo = (ts) => { if(!ts) return 'now'; const q=Math.max(0,Math.round((Date.now()-ts)/1000)); if(q<60) return q+'s ago'; const m=Math.round(q/60); if(m<60) return m+'m ago'; const h=Math.round(m/60); if(h<24) return h+'h ago'; return Math.round(h/24)+'d ago'; };
   const nsCrypto = (t) => /\b(btc|bitcoin|eth|ethereum|sol|solana|crypto|token|defi|altcoin|memecoin|stablecoin)\b/i.test(t||'');
   const CAT_TINT = { Breaking:'#F26A6A', Macro:'#3B82F6', 'On-chain':'#7C5BFF', Asset:'#FBBF24' };
@@ -520,7 +507,7 @@ function NewsStream() {
   // filter per spec: Breaking = all · For you = crypto keyword · On-chain = CoinDesk only
   const filtered = src.filter(n =>
     list==='foryou' ? (n.crypto || nsCrypto((n.title||'')+' '+(n.summary||''))) :
-    list==='onchain' ? (n.source==='CoinDesk') : true
+    list==='onchain' ? (n.cat==='On-chain' || n.source==='ARX On-chain' || n.source==='CoinDesk' || n.source==='CryptoSlate') : true
   );
   const openLink = (n) => { if (window.__arxOpenSub) window.__arxOpenSub('liveArticle', { item:n }); else if (n && n.link) window.open(n.link, '_blank', 'noopener'); };
 
@@ -560,7 +547,7 @@ function NewsStream() {
       {Header}
       <div style={{padding:'0 20px'}}>
         {filtered.length===0 && <div style={{padding:'28px 20px', textAlign:'center', font:'500 12.5px var(--font-body)', color:'var(--text-tertiary)'}}>No stories in this filter right now.</div>}
-        {filtered.slice(0, visible).map((n,i)=>{
+        {filtered.map((n,i)=>{
           const tint = CAT_TINT[n.cat] || '#7C5BFF';
           const cardImg = n.image || (window.arxFeedImg ? arxFeedImg(n.sym) : null);
           const im = window.arxFindInstrument ? arxFindInstrument(n.sym) : null; const pos = im && im.deltaPct>=0;
@@ -592,7 +579,6 @@ function NewsStream() {
             </button>
           );
         })}
-        {visible < filtered.length && <div ref={sentinelRef} style={{height:40}}/>}
         <div style={{textAlign:'center', font:'500 12px var(--font-body)', color:'var(--text-tertiary)', padding:'2px 0 18px'}}>{live?'Live from crypto newswires':''}</div>
       </div>
     </>

@@ -170,7 +170,7 @@ function HomeScreen({ onTrade, onTabChange }) {
   const [persona, setPersona] = uS(()=>{ try { return localStorage.getItem('arx-persona')||'s7'; } catch(e){ return 's7'; } });
   const setStage = (s)=>{ setLcStage(s); try{ localStorage.setItem('arx-lifecycle', s); }catch(e){} };
   const setPers = (p)=>{ setPersona(p); try{ localStorage.setItem('arx-persona', p); }catch(e){} };
-  const [revealBanner, setRevealBanner] = uS(false);
+  const [revealBanner, setRevealBanner] = uS(true);
   React.useEffect(()=>{
     const check = (e)=>{ const t=e.target; if (t && typeof t.scrollTop==='number' && t.scrollTop>70) setRevealBanner(true); };
     document.addEventListener('scroll', check, true);
@@ -212,20 +212,20 @@ function HomeScreen({ onTrade, onTabChange }) {
         const quick = s2Home ? [
           {label:'Trade', icon:'signals', onClick:onTrade},
           {label:'Positions', icon:'more', onClick:()=>onTabChange('you')},
-          {label:'Markets', icon:'vaults', onClick:()=>onTabChange('markets')},
+          {label:'Live Trade', icon:'tv', onClick:()=>window.__arxOpenSub && window.__arxOpenSub('liveTrade')},
           {label:'Watchlist', icon:'watchlist', onClick:()=>onTabChange('wallets')},
           {label:'Signals', icon:'signals', onClick:()=>onTabChange('markets')},
           {label:'Add funds', icon:'funding', onClick:()=>window.__arxOpenSub && window.__arxOpenSub('funding')},
           {label:'PnL Calendar', icon:'calendar', onClick:()=>onTabChange('you')},
         ] : [
           {label:'Positions', icon:'more', onClick:()=>onTabChange('you')},
-          {label:'Leaderboard', icon:'leaderboard', onClick:()=>onTabChange('wallets')},
+          {label:'Leaderboard', icon:'leaderboard', onClick:()=>window.__arxOpenSub && window.__arxOpenSub('arxLeaderboard')},
           {label:'Watchlist', icon:'watchlist', onClick:()=>onTabChange('wallets')},
           {label:'Add funds', icon:'funding', onClick:()=>window.__arxOpenSub && window.__arxOpenSub('funding')},
           {label:'PnL Calendar', icon:'calendar', onClick:()=>onTabChange('you')},
           {label:'Signals', icon:'signals', onClick:()=>onTabChange('markets')},
           {label:'Rewards', icon:'rewards', onClick:()=>window.__arxOpenSub && window.__arxOpenSub('rewards')},
-          {label:'Markets', icon:'vaults', onClick:()=>onTabChange('markets')},
+          {label:'Live Trade', icon:'tv', onClick:()=>window.__arxOpenSub && window.__arxOpenSub('liveTrade')},
         ];
         const Positions = (
           <React.Fragment key="pos">
@@ -1505,9 +1505,9 @@ function WalletsScreen({ onCopy }) {
             {hlUserCount ? fmtN(hlUserCount) : '—'}<span style={{color:'var(--text-tertiary)', fontSize:14, fontWeight:500}}> today</span>
           </div>
           <div style={{marginTop:9, font:'400 10.5px var(--font-body)', color:'var(--text-tertiary)'}}>
-            {WALLETS.filter(w=>w.hlLive).length > 0
-              ? WALLETS.filter(w=>w.hlLive).length+' wallets tracked live · '+fmt$(WALLETS.filter(w=>w.hlLive).reduce((s,w)=>s+(w.aumV||0),0))+' AUM'
-              : 'Loading live wallet data…'}
+            {WALLETS.length > 0
+              ? WALLETS.length+' wallets tracked · '+WALLETS.filter(w=>w.hlLive).length+' live on-chain · '+fmt$(WALLETS.filter(w=>w.hlLive).reduce((s,w)=>s+(w.aumV||0),0))+' AUM'
+              : 'Loading wallet data…'}
           </div>
         </div>
         <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', borderTop:'.5px solid var(--border-default)'}}>
@@ -1517,7 +1517,7 @@ function WalletsScreen({ onCopy }) {
               {agg.n > 0 ? fmt$(agg.totalUpnl) : '—'}
             </div>
             <div style={{font:'400 10.5px var(--font-body)', color:'var(--text-tertiary)', marginTop:3, lineHeight:1.35}}>
-              {agg.n > 0 ? agg.n+' wallets · open positions' : 'loading…'}
+              {agg.n > 0 ? agg.n+' of '+WALLETS.length+' wallets · open positions' : 'loading…'}
             </div>
           </div>
           <div style={{padding:'12px 16px 13px', borderLeft:'.5px solid var(--border-default)', minWidth:0}}>
@@ -1529,7 +1529,7 @@ function WalletsScreen({ onCopy }) {
           </div>
         </div>
         <div style={{padding:'8px 16px 10px', borderTop:'.5px solid var(--border-default)', font:'400 10.5px var(--font-body)', color:'var(--text-tertiary)', lineHeight:1.45}}>
-          On-chain unrealized P&amp;L from {agg.n > 0 ? agg.n : '—'} live wallets · changes with price · not ARX copy-trading history
+          On-chain unrealized P&amp;L from {agg.n > 0 ? agg.n : '—'} of {WALLETS.length} tracked wallets · live on-chain · changes with price
         </div>
       </div>
 

@@ -6,20 +6,32 @@
 
 const { useState: cS } = React;
 
-const WC_TEAMS = [
-  { id:'arg', name:'Argentina',   flag:'🇦🇷', pct:18 },
-  { id:'bra', name:'Brazil',      flag:'🇧🇷', pct:16 },
-  { id:'fra', name:'France',      flag:'🇫🇷', pct:14 },
-  { id:'eng', name:'England',     flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', pct:11 },
-  { id:'esp', name:'Spain',       flag:'🇪🇸', pct:10 },
-  { id:'ger', name:'Germany',     flag:'🇩🇪', pct:8 },
-  { id:'por', name:'Portugal',    flag:'🇵🇹', pct:7 },
-  { id:'ned', name:'Netherlands', flag:'🇳🇱', pct:5 },
-  { id:'usa', name:'USA',         flag:'🇺🇸', pct:4 },
-  { id:'bel', name:'Belgium',     flag:'🇧🇪', pct:3 },
-  { id:'cro', name:'Croatia',     flag:'🇭🇷', pct:2 },
-  { id:'mar', name:'Morocco',     flag:'🇲🇦', pct:2 },
+// English Premier League 2026/27 — all 20 clubs. logo = local badge asset. pct = illustrative title odds.
+const EPL_TEAMS = [
+  { id:'mci', name:'Manchester City',      logo:'assets/epl/manchester_city.png',      pct:22 },
+  { id:'liv', name:'Liverpool',            logo:'assets/epl/liverpool.png',             pct:18 },
+  { id:'ars', name:'Arsenal',              logo:'assets/epl/arsenal.png',               pct:16 },
+  { id:'che', name:'Chelsea',              logo:'assets/epl/chelsea.png',               pct:10 },
+  { id:'mun', name:'Manchester United',    logo:'assets/epl/manchester_united.png',     pct:8 },
+  { id:'tot', name:'Tottenham Hotspur',    logo:'assets/epl/tottenham_hotspur.png',     pct:6 },
+  { id:'avl', name:'Aston Villa',          logo:'assets/epl/aston_villa.png',           pct:5 },
+  { id:'new', name:'Newcastle United',     logo:'assets/epl/newcastle_united.png',      pct:4 },
+  { id:'bha', name:'Brighton & Hove Albion', logo:'assets/epl/brighton_hove_albion.png', pct:3 },
+  { id:'ful', name:'Fulham',               logo:'assets/epl/fulham.png',                pct:2 },
+  { id:'brf', name:'Brentford',            logo:'assets/epl/brentford.png',             pct:1 },
+  { id:'eve', name:'Everton',              logo:'assets/epl/everton.png',               pct:1 },
+  { id:'cry', name:'Crystal Palace',       logo:'assets/epl/crystal_palace.png',        pct:1 },
+  { id:'nfo', name:'Nottingham Forest',    logo:'assets/epl/nottingham_forest.png',     pct:1 },
+  { id:'bou', name:'AFC Bournemouth',      logo:'assets/epl/afc_bournemouth.png',       pct:0.5 },
+  { id:'sun', name:'Sunderland',           logo:'assets/epl/sunderland.png',            pct:0.5 },
+  { id:'lee', name:'Leeds United',         logo:'assets/epl/leeds_united.png',          pct:0.4 },
+  { id:'ips', name:'Ipswich Town',         logo:'assets/epl/ipswich_town.png',          pct:0.3 },
+  { id:'hul', name:'Hull City',            logo:'assets/epl/hull_city.png',             pct:0.2 },
+  { id:'cov', name:'Coventry City',        logo:'assets/epl/coventry_city.png',         pct:0.2 },
 ];
+function EplLogo({ src, size=46 }){
+  return <img src={src} alt="" onError={(e)=>{ e.target.style.visibility='hidden'; }} style={{width:size, height:size, objectFit:'contain'}}/>;
+}
 
 // All 30 NBA franchises (2026-27 season). abbr = ESPN logo CDN slug. pct = title odds.
 const NBA_TEAMS = [
@@ -148,63 +160,71 @@ function ContestResult({ onBack, title, pickLabel, pct, blurb }) {
   );
 }
 
-/* ═══ WORLD CUP ═══ */
+/* ═══ ENGLISH PREMIER LEAGUE 2026/27 — Pick the Champion ═══ */
 function ContestWC({ onBack }) {
   const [stage, setStage] = cS('landing');
   const [pick, setPick] = cS(null);
 
   if (stage === 'done') {
-    const team = WC_TEAMS.find(t => t.id === pick);
-    return <ContestResult onBack={onBack} title="You're in!" pickLabel={<span>{team.flag} {team.name}</span>} pct={team.pct}
-      blurb={`${team.pct}% of ARX players also backed ${team.name} to lift the trophy.`}/>;
+    const team = EPL_TEAMS.find(t => t.id === pick);
+    return <ContestResult onBack={onBack} title="You're in! ⚽" pickLabel={<span style={{display:'inline-flex', alignItems:'center', gap:8}}><EplLogo src={team.logo} size={26}/>{team.name}</span>} pct={team.pct}
+      blurb={`Your Premier League Champion prediction has been locked. Now let the season begin.`}/>;
   }
   if (stage === 'pick') {
     return (
       <SubShell title="Pick your champion" onBack={() => setStage('landing')}>
         <div style={{display:'flex', flexDirection:'column', gap:8, padding:'8px 20px 24px'}}>
-          <p style={{margin:'0 0 6px', font:'400 13px var(--font-body)', color:'var(--text-tertiary)'}}>Who lifts the 2026 trophy? Pick one — locks before kickoff.</p>
-          {WC_TEAMS.map(t => (
+          <p style={{margin:'0 0 6px', font:'400 13px var(--font-body)', color:'var(--text-tertiary)'}}>Choose ONE Premier League team. Once submitted, your prediction cannot be changed.</p>
+          {EPL_TEAMS.map(t => (
             <button key={t.id} onClick={() => setPick(t.id)} style={{
-              padding:14, display:'flex', alignItems:'center', gap:12, textAlign:'left', width:'100%', borderRadius:'var(--r-lg)', cursor:'pointer',
+              padding:12, display:'flex', alignItems:'center', gap:12, textAlign:'left', width:'100%', borderRadius:'var(--r-lg)', cursor:'pointer',
               border:pick === t.id ? '2px solid var(--color-violet-500)' : '.5px solid var(--border-default)',
               background:pick === t.id ? 'rgba(124,91,255,.10)' : 'var(--surface-elevated)'}}>
-              <span style={{fontSize:26}}>{t.flag}</span>
+              <EplLogo src={t.logo} size={32}/>
               <span style={{flex:1, font:'700 15px var(--font-body)', color:'var(--text-primary)'}}>{t.name}</span>
-              {pick === t.id && <span style={{width:22, height:22, borderRadius:99, background:'var(--color-violet-500)', color:'#fff', display:'inline-flex', alignItems:'center', justifyContent:'center'}}><IconCheck size={13} color="#fff"/></span>}
+              {pick === t.id && <span style={{width:22, height:22, borderRadius:99, background:'var(--color-violet-500)', color:'#fff', display:'inline-flex', alignItems:'center', justifyContent:'center', flexShrink:0}}><IconCheck size={13} color="#fff"/></span>}
             </button>
           ))}
         </div>
-        <StickyCTA><button style={{...cBtnPrimary, opacity:pick?1:.4}} disabled={!pick} onClick={() => setStage('done')}>Submit prediction</button></StickyCTA>
+        <StickyCTA><button style={{...cBtnPrimary, opacity:pick?1:.4}} disabled={!pick} onClick={() => setStage('done')}>Pick My Champion</button></StickyCTA>
       </SubShell>
     );
   }
   return (
-    <SubShell title="World Cup" onBack={onBack}>
+    <SubShell title="English Premier League" onBack={onBack}>
       <div style={{display:'flex', flexDirection:'column', gap:20, padding:'4px 20px 24px'}}>
-        <div style={{borderRadius:18, overflow:'hidden'}}><img src="assets/banner-wc.png" alt="Predict the 2026 champion" style={{width:'100%', display:'block'}}/></div>
+        <div style={{borderRadius:18, overflow:'hidden'}}><img src="assets/banner-epl.png" alt="Guess who will win the Premier League" style={{width:'100%', display:'block'}}/></div>
         <div style={{display:'flex', flexDirection:'column', gap:4}}>
-          <h1 style={{margin:0, font:'800 26px var(--font-brand)', letterSpacing:'-.02em', color:'var(--text-primary)'}}>Predict. Win. Celebrate.</h1>
-          <p style={{margin:0, font:'400 15px var(--font-body)', color:'var(--text-secondary)', lineHeight:1.5}}>Pick the team you think will lift football's biggest trophy in 2026 and stand a chance to win an official Adidas national team jersey.</p>
+          <span style={cLabel}>English Premier League 2026/27</span>
+          <h1 style={{margin:0, font:'800 26px var(--font-brand)', letterSpacing:'-.02em', color:'var(--text-primary)'}}>Pick the Champion.</h1>
+          <p style={{margin:0, font:'400 15px var(--font-body)', color:'var(--text-secondary)', lineHeight:1.5}}>Who will lift the Premier League trophy? Make your prediction before entries close and pick the team you believe will finish the 2026/27 season as Premier League Champions.</p>
         </div>
         <HowItWorks steps={[
-          { t:'Make your prediction', s:'Choose the nation you believe becomes 2026 champion.' },
-          { t:'Submit before kickoff', s:'Predictions lock before the tournament begins.' },
-          { t:'Watch the action', s:'Follow the tournament and cheer for your pick.' },
-          { t:'Win big', s:'If your prediction is correct, you enter the prize draw.' },
+          { t:'Pick your champion', s:'Choose ONE Premier League team.' },
+          { t:'Lock in your prediction', s:'Once submitted, your prediction cannot be changed.' },
+          { t:'Watch the season unfold', s:'Follow your team\u2019s journey throughout the 2026/27 season.' },
+          { t:'Win your dream jersey', s:'Correctly predict the Champion and qualify for the Grand Prize Draw.' },
         ]}/>
         <div style={{display:'flex', flexDirection:'column', gap:8}}>
-          <span style={cLabel}>Prize</span>
+          <span style={cLabel}>Grand prize</span>
           <div style={{...cCard, padding:14, display:'flex', gap:12, alignItems:'center'}}>
-            <span style={{fontSize:30}}>👕</span>
+            <span style={{fontSize:30}}>🏆</span>
             <div style={{display:'flex', flexDirection:'column', gap:2}}>
-              <span style={{font:'700 14px var(--font-body)', color:'var(--text-primary)'}}>Official Adidas National Team Jersey</span>
-              <span style={{font:'400 11px var(--font-body)', color:'var(--text-tertiary)'}}>Authentic licensed · winner picks size · global shipping included</span>
+              <span style={{font:'700 14px var(--font-body)', color:'var(--text-primary)'}}>Your dream football jersey — on us</span>
+              <span style={{font:'400 11px var(--font-body)', color:'var(--text-tertiary)'}}>Your club · your size · your name · your number · shipping covered by ARX</span>
             </div>
           </div>
         </div>
-        <RulesList rules={['One entry per verified ARX account','Prediction cannot be changed after submission','Winners selected from all correct entries','ARX reserves the right to verify eligibility']}/>
+        <RulesList rules={[
+          'One prediction per verified ARX account',
+          'Only one team may be selected',
+          'Predictions cannot be changed after submission',
+          'Your selected team must win the 2026/27 Premier League to qualify for the Grand Prize Draw',
+          'One winner will be selected from all eligible correct entries',
+          'ARX reserves the right to verify participant eligibility',
+        ]}/>
       </div>
-      <StickyCTA><button style={cBtnPrimary} onClick={() => setStage('pick')}>Predict Now</button></StickyCTA>
+      <StickyCTA><button style={cBtnPrimary} onClick={() => setStage('pick')}>Pick My Champion</button></StickyCTA>
     </SubShell>
   );
 }
@@ -423,10 +443,203 @@ function ContestNVDA({ onBack }) {
   );
 }
 
+/* ── line icons matching the Copy-tab tile set (stroke, no emoji) ── */
+function IconLink2({ size=15, color='currentColor' }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/>
+  </svg>);
+}
+function IconBars({ size=15, color='currentColor' }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="5" y1="20" x2="5" y2="12"/><line x1="12" y1="20" x2="12" y2="5"/><line x1="19" y1="20" x2="19" y2="9"/>
+  </svg>);
+}
+function IconTrendUp({ size=15, color='currentColor' }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="4 16 10 10 14 13 20 6"/><polyline points="14 6 20 6 20 12"/>
+  </svg>);
+}
+function IconUsers2({ size=15, color='currentColor' }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M16 8.2a2.7 2.7 0 1 1 0 5.4"/><path d="M15.5 14.6c2.6.4 4.5 2.3 4.5 5.4"/>
+  </svg>);
+}
+function IconPerson({ size=13, color='currentColor' }) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.9 3.6-6 8-6s8 2.1 8 6"/>
+  </svg>);
+}
+
+/* ═══ ARX Leaderboard — Referral / Volume / Profit / Copiers rankings ═══
+   Standalone flow (not the Copy-tab leaderboard). Opened via
+   __arxOpenSub('arxLeaderboard'). Same visual language as ContestNVDA. */
+function ArxLeaderboard({ onBack }) {
+  const [tab, setTab] = cS('referral');
+  const up = 'var(--regime-up-mid)', down = 'var(--regime-down-mid)';
+
+  const TABS = [
+    { id:'referral', label:'Referrals', Icon:IconLink2 },
+    { id:'volume',    label:'Volume',   Icon:IconBars },
+    { id:'profit',    label:'Profit',   Icon:IconTrendUp },
+    { id:'copiers',   label:'Copiers',  Icon:IconUsers2 },
+  ];
+  const active = TABS.find(t => t.id === tab);
+
+  const StatUnits = ({ n }) => (
+    <span style={{display:'inline-flex', alignItems:'center', gap:3}}>
+      <IconPerson size={11} color='var(--text-tertiary)'/>{n}
+    </span>
+  );
+
+  const DATA = {
+    referral: [
+      { name:'Al Jefferson',       stat:842, pts:'42,100' },
+      { name:'The Great Gary',     stat:611, pts:'30,550' },
+      { name:'Rays of Dai Lo',     stat:488, pts:'24,400' },
+      { name:'Bernardo Di Caprio', stat:355, pts:'17,750' },
+      { name:'Anyma Fan',          stat:290, pts:'14,500' },
+      { name:'frostbyte',          stat:204, pts:'10,200' },
+      { name:'ChartNinja',         stat:177, pts:'8,850' },
+      { name:'delta_hedge',        stat:149, pts:'7,450' },
+    ],
+    volume: [
+      { name:'Bernardo Di Caprio', stat:'$22,000,222', pts:'18,400' },
+      { name:'Al Jefferson',       stat:'$16,480,050', pts:'14,900' },
+      { name:'moonfarmer',         stat:'$11,205,400', pts:'11,200' },
+      { name:'The Great Gary',     stat:'$9,640,180',  pts:'9,600' },
+      { name:'sol_sniper',         stat:'$8,112,900',  pts:'8,100' },
+      { name:'Rays of Dai Lo',     stat:'$6,404,220',  pts:'6,400' },
+      { name:'ChartNinja',         stat:'$5,205,600',  pts:'5,200' },
+      { name:'Anyma Fan',          stat:'$24,000',     pts:'4,700' },
+    ],
+    profit: [
+      { name:'The Great Gary',     stat:'+$22,000,000', pts:'68,200' },
+      { name:'Al Jefferson',       stat:'+$514,200',    pts:'51,400' },
+      { name:'delta_hedge',        stat:'+$391,050',    pts:'39,100' },
+      { name:'Rays of Dai Lo',     stat:'+$308,600',    pts:'30,800' },
+      { name:'Bernardo Di Caprio', stat:'+$255,300',    pts:'25,500' },
+      { name:'frostbyte',          stat:'+$201,150',    pts:'20,100' },
+      { name:'moonfarmer',         stat:'+$168,400',    pts:'16,800' },
+      { name:'Anyma Fan',          stat:'+$24,000',     pts:'14,000' },
+    ],
+    copiers: [
+      { name:'Al Jefferson',       stat:1240, pts:'12,400' },
+      { name:'Rays of Dai Lo',     stat:980,  pts:'9,800' },
+      { name:'The Great Gary',     stat:842,  pts:'8,420' },
+      { name:'Anyma Fan',          stat:705,  pts:'7,050' },
+      { name:'Bernardo Di Caprio', stat:611,  pts:'6,110' },
+      { name:'ChartNinja',         stat:488,  pts:'4,880' },
+      { name:'sol_sniper',         stat:402,  pts:'4,020' },
+      { name:'frostbyte',          stat:355,  pts:'3,550' },
+    ],
+  };
+  const rows = DATA[tab];
+  const isPeople = tab === 'referral' || tab === 'copiers';
+  const top5 = rows.slice(0, 5);
+  const bubble = rows.slice(5, 10);
+  const gapToTop5 = isPeople
+    ? (top5[4] ? Number(String(top5[4].stat).replace(/,/g,'')) - Number(String(bubble[0] && bubble[0].stat || 0).replace(/,/g,'')) : 0)
+    : Number(String(top5[4] ? top5[4].pts : 0).replace(/,/g,'')) - Number(String(bubble[0] ? bubble[0].pts : 0).replace(/,/g,''));
+  const CTA = {
+    referral: { label:'Refer now',  sub:'rewards', params:{tab:'referrals'} },
+    volume:   { label:'Trade now',  sub:'trade' },
+    profit:   { label:'Trade now',  sub:'copy' },
+    copiers:  { label:'Invite now', sub:'rewards', params:{tab:'referrals'} },
+  }[tab];
+
+  const goCta = () => {
+    onBack();
+    const c = CTA;
+    if (c.sub === 'trade') { window.__arxTrade && window.__arxTrade(); return; }
+    if (c.sub === 'copy')  { window.__arxGoTab && window.__arxGoTab('copy'); return; }
+    window.__arxOpenSub && window.__arxOpenSub(c.sub, c.params || {});
+  };
+
+  const row = (r, i, isBubble) => (
+    <div key={r.name} style={{display:'flex', alignItems:'center', gap:10, padding:isBubble?'9px 10px':'10px 10px',
+      borderBottom: (isBubble ? i<bubble.length-1 : i<top5.length-1) ? '.5px solid var(--border-default)' : 'none', opacity:isBubble?0.94:1}}>
+      <span style={{width:22, textAlign:'center', font:`800 ${isBubble?13:14}px var(--font-mono)`, color:(!isBubble && i<3) ? up : 'var(--text-tertiary)'}}>{isBubble ? i+6 : i+1}</span>
+      <Avatar label={r.name} size={isBubble?28:30}/>
+      <div style={{display:'flex', flexDirection:'column', flex:1, minWidth:0, gap:0}}>
+        <span style={{font:`600 ${isBubble?12.5:13}px var(--font-body)`, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{r.name}</span>
+        <span style={{font:'400 11px var(--font-mono)', color:'var(--text-tertiary)'}}>{isPeople ? <StatUnits n={r.stat}/> : r.stat}</span>
+      </div>
+      {(!isBubble && i>=3) && (
+        <span style={{font:'800 9px var(--font-body)', color:down, background:'rgba(255,77,106,.12)', padding:'2px 6px', borderRadius:999, whiteSpace:'nowrap', flexShrink:0}}>AT RISK</span>
+      )}
+      {(isBubble && i<3) && (
+        <span style={{font:'800 9px var(--font-body)', color:up, background:'rgba(20,184,123,.14)', padding:'2px 6px', borderRadius:999, whiteSpace:'nowrap', flexShrink:0}}>SO CLOSE</span>
+      )}
+      <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end', gap:0, width:56, flexShrink:0}}>
+        <span style={{font:`700 ${isBubble?12.5:13}px var(--font-mono)`, color:'var(--text-primary)'}}>{r.pts}</span>
+        <span style={{font:'400 11px var(--font-body)', color:'var(--text-tertiary)'}}>pts</span>
+      </div>
+    </div>
+  );
+
+  return (
+    <SubShell title="Leaderboard" onBack={onBack}>
+      <div style={{display:'flex', flexDirection:'column', gap:20, padding:'4px 20px 24px'}}>
+        <div style={{display:'flex', flexDirection:'column', gap:4}}>
+          <h1 style={{margin:0, font:'800 24px var(--font-brand)', letterSpacing:'-.02em', color:'var(--text-primary)'}}>ARX Leaderboard</h1>
+          <p style={{margin:0, font:'400 14px var(--font-body)', color:'var(--text-secondary)', lineHeight:1.5}}>Top traders across referrals, volume, profit and copiers — updated weekly.</p>
+        </div>
+
+        <div style={{display:'flex', gap:6, background:'var(--surface-elevated)', border:'.5px solid var(--border-default)', borderRadius:'var(--r-md)', padding:4}}>
+          {TABS.map(t => (
+            <button key={t.id} onClick={()=>setTab(t.id)} style={{
+              flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:2, padding:'8px 4px', borderRadius:'calc(var(--r-md) - 4px)',
+              border:'none', cursor:'pointer', background: tab===t.id ? 'var(--color-violet-500)' : 'transparent',
+              transition:'background 160ms'}}>
+              <t.Icon size={15} color={tab===t.id ? '#fff' : 'var(--text-secondary)'}/>
+              <span style={{font:`${tab===t.id?700:500} 10.5px var(--font-body)`, color: tab===t.id ? '#fff' : 'var(--text-secondary)'}}>{t.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <div style={{display:'flex', flexDirection:'column', gap:8}}>
+          <span style={cLabel}>{active.label} · this week</span>
+          <div style={{...cCard, padding:6}}>{top5.map((r,i)=>row(r,i,false))}</div>
+        </div>
+
+        <div style={{display:'flex', flexDirection:'column', gap:8}}>
+          <div style={{display:'flex', justifyContent:'space-between', alignItems:'baseline'}}>
+            <span style={cLabel}>On the bubble · keep climbing</span>
+            <span style={{font:'700 11px var(--font-mono)', color:up}}>+{gapToTop5.toLocaleString()} pts to Top 5</span>
+          </div>
+          <div style={{borderRadius:'var(--r-lg)', padding:6, border:'1px dashed var(--border-strong)', background:'transparent'}}>{bubble.map((r,i)=>row(r,i,true))}</div>
+          <p style={{margin:'2px 4px 0', font:'400 11px var(--font-body)', color:'var(--text-tertiary)', lineHeight:1.4}}>Ranks 6–10 are one strong week from the prize zone. {active.label} more to climb into the Top 5.</p>
+        </div>
+
+        <div style={{display:'flex', flexDirection:'column', gap:8}}>
+          <span style={cLabel}>Prizes · Top 5 win</span>
+          <div style={{...cCard, padding:14, display:'flex', gap:12, alignItems:'center'}}>
+            <span style={{fontSize:30}}>🏆</span>
+            <div style={{display:'flex', flexDirection:'column', gap:2}}>
+              <span style={{font:'700 14px var(--font-body)', color:'var(--text-primary)'}}>ARX prize pool</span>
+              <span style={{font:'400 11px var(--font-body)', color:'var(--text-tertiary)'}}>Top 5 on each leaderboard split the weekly reward pool.</span>
+            </div>
+          </div>
+        </div>
+
+        <RulesList rules={[
+          'Rankings refresh weekly, every Monday 00:00 UTC',
+          'Referral ranking counts new funded accounts from your invite link',
+          'Volume and profit rankings use realized trades across all ARX markets',
+          'Copiers ranking counts active followers on your Copy profile',
+          'ARX may disqualify fraudulent or abusive activity',
+        ]}/>
+        <p style={{textAlign:'center', margin:0, font:'400 11px var(--font-body)', color:'var(--text-tertiary)'}}>Powered by Hyperliquid</p>
+      </div>
+      <StickyCTA><button style={cBtnPrimary} onClick={goCta}>{CTA.label}</button></StickyCTA>
+    </SubShell>
+  );
+}
+
 /* ── Home banner carousel — deep-links to the contest details ── */
 function BannerCarousel() {
   const banners = [
-    { id:'wc',   img:'assets/banner-wc.png',     alt:'Predict the 2026 champion', sub:'contestWC' },
+    { id:'wc',   img:'assets/banner-epl.png',    alt:'Guess who will win the Premier League', sub:'contestWC' },
     { id:'nba',  img:'assets/banner-nba-champion.png', alt:'Pick a Champion — new NBA season', sub:'contestNBA' },
     { id:'nvda', img:'assets/banner-nvidia.png', alt:'Trade NVIDIA, win iPhone 18', sub:'contestNVDA' },
   ];
@@ -468,7 +681,7 @@ function BannerCarousel() {
           <button key={b.id} onClick={() => window.__arxOpenSub && window.__arxOpenSub(b.sub)} style={{
             flex:'0 0 100%', scrollSnapAlign:'center', border:'none', padding:0, cursor:'pointer', borderRadius:'var(--r-lg)',
             overflow:'hidden', background:'#000', aspectRatio:'2.2 / 1'}}>
-            <img src={b.img} alt={b.alt} style={{width:'100%', height:'100%', objectFit:'contain', display:'block'}}/>
+            <img src={b.img} alt={b.alt} style={{width:'100%', height:'100%', objectFit:'cover', display:'block'}}/>
           </button>
         ))}
       </div>
@@ -483,4 +696,4 @@ function BannerCarousel() {
   );
 }
 
-Object.assign(window, { ContestWC, ContestNBA, ContestNVDA, BannerCarousel });
+Object.assign(window, { ContestWC, ContestNBA, ContestNVDA, ArxLeaderboard, BannerCarousel });

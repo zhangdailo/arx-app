@@ -75,35 +75,83 @@ function WdH({ children, right }) {
 /* ═══ Charts — pure SVG, RN-portable ═══ */
 
 /* Equity curve — axis labels, drawdown shading, live end dot */
-function WdEquity({ spark, positive, endLabel }) {
-  const W=330, H=132, n=spark.length;
+function WdEquity({ spark, positive, endLabel, days }) {
+  const W=330, H=150, n=spark.length;
   const min=Math.min(...spark), max=Math.max(...spark), rng=(max-min)||1;
-  const x=(i)=>6+(i/(n-1))*(W-14), y=(v)=>H-20-((v-min)/rng)*(H-38);
+  const PADL=32, PADR=8;
+  const x=(i)=>PADL+(i/(n-1))*(W-PADL-PADR), y=(v)=>H-30-((v-min)/rng)*(H-56);
   // smooth midpoint-quadratic path
   const pts=spark.map((v,i)=>[x(i),y(v)]);
   let line='M'+pts[0][0].toFixed(1)+' '+pts[0][1].toFixed(1);
   for(let i=1;i<n;i++){ const mx=((pts[i-1][0]+pts[i][0])/2).toFixed(1), my=((pts[i-1][1]+pts[i][1])/2).toFixed(1);
     line+=' Q'+pts[i-1][0].toFixed(1)+' '+pts[i-1][1].toFixed(1)+' '+mx+' '+my; }
   line+=' L'+pts[n-1][0].toFixed(1)+' '+pts[n-1][1].toFixed(1);
-  const area=line+' L'+x(n-1).toFixed(1)+' '+(H-14)+' L'+x(0).toFixed(1)+' '+(H-14)+' Z';
+  const area=line+' L'+x(n-1).toFixed(1)+' '+(H-24)+' L'+x(0).toFixed(1)+' '+(H-24)+' Z';
   const col= positive?'var(--regime-up-mid)':'var(--regime-down-mid)';
   let pk=0; for(let i=1;i<n;i++) if(spark[i]>spark[pk]) pk=i;
   let tr=pk; for(let i=pk;i<n;i++) if(spark[i]<spark[tr]) tr=i;
+  // 4 evenly-spaced Y gridlines with value labels
+  const gridN=4; const gridVals=Array.from({length:gridN},(_,i)=>min+rng*(i/(gridN-1)));
+  // scrub state
+  const [hover, setHover] = React.useState(null);
+  const svgRef = React.useRef(null);
+  const idxFromClientX = (clientX) => {
+    const svg = svgRef.current; if (!svg) return null;
+    const rect = svg.getBoundingClientRect();
+    const relX = (clientX-rect.left)/rect.width*W;
+    let best=0, bd=Infinity; for(let i=0;i<n;i++){ const d=Math.abs(x(i)-relX); if(d<bd){bd=d;best=i;} }
+    return best;
+  };
+  const onMove = (e) => { const cx = e.touches?e.touches[0].clientX:e.clientX; setHover(idxFromClientX(cx)); };
+  const dayLabel = (i) => { if(!days) return ''; const d=days[i]; return d ? d : ''; };
   return (
-    <svg width="100%" viewBox={'0 0 '+W+' '+H} style={{display:'block'}}>
+    <svg ref={svgRef} width="100%" viewBox={'0 0 '+W+' '+H} style={{display:'block', touchAction:'none'}}
+      onMouseMove={onMove} onMouseLeave={()=>setHover(null)}
+      onTouchStart={onMove} onTouchMove={onMove} onTouchEnd={()=>setHover(null)}>
       <defs><linearGradient id="wdeq" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stopColor={positive?'#2DD49B':'#F26A6A'} stopOpacity=".30"/>
         <stop offset="1" stopColor={positive?'#2DD49B':'#F26A6A'} stopOpacity="0"/>
       </linearGradient></defs>
+      {/* Y-axis gridlines + % labels */}
+      {gridVals.map((v,i)=>(
+        <g key={i}>
+          <line x1={PADL} y1={y(v)} x2={W-PADR} y2={y(v)} stroke="var(--border-default)" strokeWidth="1" strokeDasharray="2 3"/>
+          <text x={PADL-6} y={y(v)+3} textAnchor="end" style={{font:'500 7px var(--font-mono)', fill:'var(--text-tertiary)'}}>{v>=0?'+':''}{v.toFixed(0)}%</text>
+        </g>
+      ))}
+      {/* X-axis start/end date labels */}
+      {days && <>
+        <text x={x(0)} y={H-6} textAnchor="start" style={{font:'500 7px var(--font-body)', fill:'var(--text-tertiary)'}}>{dayLabel(0)}</text>
+        <text x={x(n-1)} y={H-6} textAnchor="end" style={{font:'500 7px var(--font-body)', fill:'var(--text-tertiary)'}}>{dayLabel(n-1)}</text>
+      </>}
       <path d={area} fill="url(#wdeq)"/>
-      {tr>pk && <rect x={x(pk)} y={10} width={x(tr)-x(pk)} height={H-28} rx="4" fill="rgba(242,106,106,.06)"/>}
+      {tr>pk && <rect x={x(pk)} y={10} width={x(tr)-x(pk)} height={H-46} rx="4" fill="rgba(242,106,106,.06)"/>}
       <path d={line} fill="none" stroke={col} strokeWidth="2.25" strokeLinecap="round"/>
-      {tr>pk && <text x={(x(pk)+x(tr))/2} y={H-5} textAnchor="middle" style={{font:'500 7.5px var(--font-body)', fill:'var(--regime-down-mid)', opacity:.8}}>worst stretch</text>}
-      <circle cx={x(n-1)} cy={y(spark[n-1])} r="4" fill={col}/>
-      <circle cx={x(n-1)} cy={y(spark[n-1])} r="8" fill="none" stroke={col} strokeOpacity=".3"/>
-      {endLabel && (<g>
+      {tr>pk && <text x={(x(pk)+x(tr))/2} y={H-22} textAnchor="middle" style={{font:'500 7.5px var(--font-body)', fill:'var(--regime-down-mid)', opacity:.8}}>worst stretch</text>}
+      {hover==null && <>
+        <circle cx={x(n-1)} cy={y(spark[n-1])} r="4" fill={col} opacity=".35"/>
+        {/* traveling dot — runs the curve on a loop, pulsing ring trails it */}
+        <circle r="8" fill="none" stroke={col} strokeOpacity=".35">
+          <animateMotion dur="3.6s" repeatCount="indefinite" path={line} rotate="0"/>
+          <animate attributeName="r" values="4;9;4" dur="1.8s" repeatCount="indefinite"/>
+          <animate attributeName="stroke-opacity" values=".5;0;.5" dur="1.8s" repeatCount="indefinite"/>
+        </circle>
+        <circle r="4" fill={col}>
+          <animateMotion dur="3.6s" repeatCount="indefinite" path={line} rotate="0"/>
+        </circle>
+      </>}
+      {endLabel && hover==null && (<g>
         <rect x={W-52} y={4} width={46} height={17} rx={8.5} fill={positive?'rgba(45,212,155,.16)':'rgba(242,106,106,.16)'}/>
         <text x={W-29} y={16} textAnchor="middle" className="num" style={{font:'700 10px var(--font-mono)', fill:col}}>{endLabel}</text>
+      </g>)}
+      {/* scrub readout */}
+      {hover!=null && (<g>
+        <line x1={x(hover)} y1={10} x2={x(hover)} y2={H-24} stroke={col} strokeWidth="1" strokeDasharray="2 2" opacity=".6"/>
+        <circle cx={x(hover)} cy={y(spark[hover])} r="4.5" fill={col}/>
+        <circle cx={x(hover)} cy={y(spark[hover])} r="8" fill="none" stroke={col} strokeOpacity=".3"/>
+        <rect x={Math.min(W-88, Math.max(4,x(hover)-44))} y={4} width={88} height={30} rx={9} fill="var(--surface-elevated)" stroke="var(--border-default)"/>
+        <text x={Math.min(W-44, Math.max(48,x(hover)))} y={17} textAnchor="middle" style={{font:'600 8px var(--font-body)', fill:'var(--text-tertiary)'}}>{dayLabel(hover)||('Day '+(hover+1))}</text>
+        <text x={Math.min(W-44, Math.max(48,x(hover)))} y={28} textAnchor="middle" className="num" style={{font:'700 10px var(--font-mono)', fill:col}}>{spark[hover]>=0?'+':''}{spark[hover].toFixed(1)}%</text>
       </g>)}
     </svg>
   );

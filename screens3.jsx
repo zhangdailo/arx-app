@@ -395,7 +395,7 @@ function ContestsScreen({ onBack, onToast, onBadges }) {
   const C = [
     ['assets/banner-nvidia.png','Trade NVDA · win iPhone 18','Top 5 by PnL · ends in 4d','2,118 entered','contestNVDA'],
     ['assets/banner-nba.png','Pick a champ · Spurs vs Knicks','Predict & climb the table','8,402 entered','contestNBA'],
-    ['assets/banner-wc.png','Predict. Win. · World Cup','Bracket challenge · jerseys + merch','12,077 entered','contestWC'],
+    ['assets/banner-epl.png','Pick the Champion · Premier League','Guess who will win the EPL','9,204 entered','contestWC'],
   ];
   return (
     <SubShell title="Contests" onBack={onBack}>

@@ -50,6 +50,7 @@
 <meta name="ext-resource-dependency" content="assets/gold.png"/>
 <meta name="ext-resource-dependency" content="assets/silver.png"/>
 <meta name="ext-resource-dependency" content="assets/sui.png"/>
+<div class="label">arx · mobile UI kit · iOS · web3 dark</div>
 <div class="stage">
   <div id="root"></div>
 </div>
@@ -70,29 +71,30 @@
 <script type="text/babel" src="instrument-traders.jsx?v=1"></script>
 <script type="text/babel" src="instrument-detail-v2.jsx?v=1"></script>
 <script type="text/babel" src="wallet-view.jsx?v=8"></script>
-<script type="text/babel" src="features.jsx?v=20"></script>
+<script type="text/babel" src="features.jsx?v=22"></script>
 <script type="text/babel" src="discover.jsx?v=15"></script>
 <script type="text/babel" src="extras.jsx?v=15"></script>
 <script type="text/babel" src="you-batch1.jsx?v=6"></script>
 <script type="text/babel" src="you-account.jsx?v=3"></script>
-<script type="text/babel" src="screens.jsx?v=167"></script>
+<script type="text/babel" src="screens.jsx?v=169"></script>
 <script type="text/babel" src="arx-whales.jsx?v=6"></script>
 <script type="text/babel" src="markets-extra.jsx?v=2"></script>
 <script type="text/babel" src="scorecard.jsx?v=1"></script>
-<script type="text/babel" src="wallet-detail.jsx?v=25"></script>
+<script type="text/babel" src="wallet-detail.jsx?v=27"></script>
 <script type="text/babel" src="screens2.jsx?v=17"></script>
-<script type="text/babel" src="screens3.jsx?v=16"></script>
+<script type="text/babel" src="screens3.jsx?v=17"></script>
 <script type="text/babel" src="lucid.jsx?v=49"></script>
 <script type="text/babel" src="search.jsx?v=20"></script>
 <script type="text/babel" src="news-live.jsx?v=14"></script>
-<script type="text/babel" src="attention.jsx?v=42"></script>
+<script type="text/babel" src="attention.jsx?v=43"></script>
 <script type="text/babel" src="you-hub.jsx?v=1"></script>
 <script type="text/babel" src="you-profile-extras.jsx?v=2"></script>
 <script type="text/babel" src="earn-hub.jsx?v=1"></script>
 <script type="text/babel" src="data-sources.jsx?v=4"></script>
 <script type="text/babel" src="screen-record.jsx?v=5"></script>
 <script type="text/babel" src="news-immersive.jsx?v=23"></script>
-<script type="text/babel" src="contests.jsx?v=7"></script>
+<script type="text/babel" src="contests.jsx?v=13"></script>
+<script type="text/babel" src="live-trade.jsx?v=2"></script>
 <script type="text/babel" src="pnl-share.jsx?v=2"></script>
 <script type="text/babel" src="rewards.jsx?v=5"></script>
 <script type="text/babel" src="lib/hl-client.jsx?v=1"></script>
@@ -235,6 +237,9 @@ function App() {
       {sub.id==='transfer'         && <TransferFlow onClose={closeSub} onToast={showToast}/>}
       {sub.id==='wallet'           && <WalletSheet onClose={closeSub} onToast={showToast}/>}
       {sub.id==='history'          && <HistoryScreen onBack={closeSub}/>}
+      {sub.id==='arxLeaderboard' && <ArxLeaderboard onBack={closeSub}/>}
+      {sub.id==='liveTrade'      && <LiveTradeScreen onBack={closeSub}/>}
+      {sub.id==='liveTradeRoom'  && <LiveTradeRoomScreen roomId={sub.params.room} onBack={closeSub} onToast={showToast}/>}
     </div>
   );
 
@@ -304,6 +309,7 @@ function App() {
         </div>
       </div>
       {window.ScreenRecordButton && <ScreenRecordButton frameSel="#arx-frame"/>}
+      <DemoPanel theme={theme} setTheme={setTheme}/>
     </div>
   );
 }
